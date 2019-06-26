@@ -1163,7 +1163,7 @@
           "fq_name": [
             "default-global-system-config", "pnf-service_chaining"
           ],
-          "name": "pnf-service_chaining"
+          "name": "pnf-service-chaining"
         }
       ]
     },
