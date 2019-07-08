@@ -18,8 +18,27 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         (jt, fabric, node_profiles, role_configs,
          physical_routers, bgp_routers) = self.create_base_objects()
 
+        # Make a small change to force config push to srx
+        physical_routers[0].set_physical_router_management_ip('3.3.3.3')
+        self._vnc_lib.physical_router_update(physical_routers[0])
+
+        gevent.sleep(1)
         abstract_config = self.check_dm_ansible_config_push()
-        print(json.dumps(abstract_config, indent=4, sort_keys=True))
+
+        print("==================SRX ABSTRACT CONFIG==================")
+        print(json.dumps(abstract_config, indent=4))
+        print("==================SRX ABSTRACT CONFIG==================")
+
+        # Make a small change to force config push to qfx
+        physical_routers[1].set_physical_router_management_ip('5.5.5.5')
+        self._vnc_lib.physical_router_update(physical_routers[1])
+
+        gevent.sleep(1)
+        abstract_config = self.check_dm_ansible_config_push()
+
+        print("==================QFX ABSTRACT CONFIG==================")
+        print(json.dumps(abstract_config, indent=4))
+        print("==================QFX ABSTRACT CONFIG==================")
 
         self.destroy_base_objects(
             jt, fabric, node_profiles, role_configs,
@@ -71,6 +90,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         physical_routers = [pr_srx, pr_qfx]
         bgp_routers = [bgp_srx, bgp_qfx]
 
+        gevent.sleep(1)
+
         return (jt, fabric, node_profiles, role_configs,
                 physical_routers, bgp_routers)
 
@@ -80,14 +101,10 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             self, job_template, fabric, node_profiles, role_configs,
             physical_routers, bgp_routers
             ):
-        # Delete Physical Routers
-        for pr in physical_routers:
-            self.delete_routers(None, pr)
-            self.wait_for_routers_delete(None, pr.get_fq_name())
-
-        # Delete BGP Routers
-        for bgpr in bgp_routers:
-            self._vnc_lib.bgp_router_delete(fq_name=bgpr.get_fq_name())
+        # Delete BGP Routers, Physical Routers
+        for bgpr, pr in zip(bgp_routers, physical_routers):
+            self.delete_routers(bgpr, pr)
+            self.wait_for_routers_delete(bgpr.get_fq_name(), pr.get_fq_name())
 
         # Delete Role Configs
         for rc in role_configs:
@@ -105,11 +122,24 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end destroy_created_objects
 
-    # TODO Create Logical Interfaces
+    # TODO Create VMI
     # TODO Create Service Appliance Set
     # TODO Create Service Template
-    # TODO Create Service Instance
     # TODO Create Service Appliance
+    # TODO Create Service Instance
+    # TODO Create Logical Routers
     # TODO Create Port Tuple
+
+    def print_all_objects(self):
+        # Print all job templates
+        print(json.dumps(self._vnc_lib.job_templates_list(), indent=4))
+        # Print all fabrics
+        print(json.dumps(self._vnc_lib.fabrics_list(), indent=4))
+        # Print all node profiles
+        print(json.dumps(self._vnc_lib.node_profiles_list(), indent=4))
+        # Print all physical routers
+        print(json.dumps(self._vnc_lib.physical_routers_list(), indent=4))
+        # Print all bgp routers
+        print(json.dumps(self._vnc_lib.bgp_routers_list(), indent=4))
 
 # end TestAnsiblePNFSrvcChainingDM
