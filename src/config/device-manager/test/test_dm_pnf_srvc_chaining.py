@@ -3,6 +3,7 @@
 #
 import gevent
 import json
+import sys
 from attrdict import AttrDict
 from device_manager.device_manager import DeviceManager
 from cfgm_common.tests.test_common import retries
@@ -15,31 +16,79 @@ from vnc_api.vnc_api import *
 class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     def test_pnf_required_params(self):
+        # Create base objects
         (jt, fabric, node_profiles, role_configs,
          physical_routers, bgp_routers) = self.create_base_objects()
 
-        # Make a small change to force config push to srx
-        physical_routers[0].set_physical_router_management_ip('3.3.3.3')
-        self._vnc_lib.physical_router_update(physical_routers[0])
+        # Get Individual Physical Routers
+        srx = physical_routers[0]
+        qfx = physical_routers[1]
 
-        gevent.sleep(1)
-        abstract_config = self.check_dm_ansible_config_push()
+        # Create VMI and PIs for srx
+        vxlan_id_srx = 5
+        vn_obj_srx = self.create_vn(str(vxlan_id_srx), '5.5.5.0')
+        port_vlan_tag_srx = 50
+        vlan_tag_srx = 0
+        vmi_srx, vm_srx, pi_list_srx = self.attach_vmi(
+            str(vxlan_id_srx), ['xe-1/0/0', 'xe-1/0/1'], [srx, srx],
+            vn_obj_srx, None, fabric, None, port_vlan_tag_srx)
 
-        print("==================SRX ABSTRACT CONFIG==================")
-        print(json.dumps(abstract_config, indent=4))
-        print("==================SRX ABSTRACT CONFIG==================")
+        # Create VMI and PIs for qfx
+        vxlan_id_qfx = 7
+        vn_obj_qfx = self.create_vn(str(vxlan_id_qfx), '7.7.7.0')
+        port_vlan_tag_qfx = 70
+        vlan_tag_qfx = 0
+        vmi_qfx, vm_qfx, pi_list_qfx = self.attach_vmi(
+            str(vxlan_id_qfx), ['xe-1/1/0', 'xe-1/1/1'], [qfx, qfx],
+            vn_obj_qfx, None, fabric, None, port_vlan_tag_qfx)
 
-        # Make a small change to force config push to qfx
-        physical_routers[1].set_physical_router_management_ip('5.5.5.5')
-        self._vnc_lib.physical_router_update(physical_routers[1])
+        # Create Left Logical Router
+        llr = LogicalRouter("left_lr")
+        llr.set_physical_router(qfx)
+        llr_uuid = self._vnc_lib.logical_router_create(llr)
+        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
 
-        gevent.sleep(1)
-        abstract_config = self.check_dm_ansible_config_push()
+        # Create Right Logical Router
+        rlr = LogicalRouter("right_lr")
+        rlr.set_physical_router(qfx)
+        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
+        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
 
-        print("==================QFX ABSTRACT CONFIG==================")
-        print(json.dumps(abstract_config, indent=4))
-        print("==================QFX ABSTRACT CONFIG==================")
+        # Create Service Objects
+        (sas_obj, st_obj, sa_obj,
+         si_obj, pt_obj) = self.create_service_objects()
 
+        print("========================================")
+        print("===========STARTED DESTROYING===========")
+        print("========================================")
+
+        # Destroy service objects
+        self.delete_service_objects(sas_obj, st_obj, sa_obj, si_obj, pt_obj)
+
+        # Destroy Logical Routers
+        for lr in [llr, rlr]:
+            self._vnc_lib.logical_router_delete(fq_name=lr.get_fq_name())
+
+        # Destroy physical interfaces, vmis, vms and vn
+        self._vnc_lib.virtual_machine_interface_delete(
+            fq_name=vmi_srx.get_fq_name())
+        self._vnc_lib.virtual_machine_interface_delete(
+            fq_name=vmi_qfx.get_fq_name())
+
+        self._vnc_lib.virtual_machine_delete(fq_name=vm_srx.get_fq_name())
+        self._vnc_lib.virtual_machine_delete(fq_name=vm_qfx.get_fq_name())
+
+        for idx in range(len(pi_list_srx)):
+            self._vnc_lib.physical_interface_delete(
+                fq_name=pi_list_srx[idx].get_fq_name())
+        for idx in range(len(pi_list_qfx)):
+            self._vnc_lib.physical_interface_delete(
+                fq_name=pi_list_qfx[idx].get_fq_name())
+
+        self._vnc_lib.virtual_network_delete(fq_name=vn_obj_srx.get_fq_name())
+        self._vnc_lib.virtual_network_delete(fq_name=vn_obj_qfx.get_fq_name())
+
+        # Destroy Base Objects
         self.destroy_base_objects(
             jt, fabric, node_profiles, role_configs,
             physical_routers, bgp_routers)
@@ -123,12 +172,227 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
     # end destroy_created_objects
 
     # TODO Create VMI
+
     # TODO Create Service Appliance Set
+    def create_service_appliance_set(self, name):
+        sas_obj = ServiceApplianceSet(
+            name=name, parent_type='global-system-config',
+            fq_name=[self.GSC, name])
+
+        sas_obj.set_service_appliance_set_virtualization_type(
+            "physical-device")
+        # TODO SAS Properties
+
+        sas_uuid = self._vnc_lib.service_appliance_set_create(sas_obj)
+        sas_obj = self._vnc_lib.service_appliance_set_read(id=sas_uuid)
+
+        return sas_obj
+
     # TODO Create Service Template
+    def create_service_template(self, name, sas_obj):
+
+        st_obj = ServiceTemplate(name=name)
+
+        st_uuid = self._vnc_lib.service_template_create(st_obj)
+        st_obj.set_service_appliance_set(sas_obj)
+
+        try:
+            svc_properties = ServiceTemplateType()
+            svc_properties.set_service_virtualization_type(
+                "physical-device")
+            if_type = ServiceTemplateInterfaceType()
+            if_type.set_service_interface_type('left')
+            svc_properties.add_interface_type(if_type)
+            if_type = ServiceTemplateInterfaceType()
+            if_type.set_service_interface_type('right')
+            svc_properties.add_interface_type(if_type)
+        except AttributeError:
+            print("Warning: Service template could not be fully updated ")
+        else:
+            st_obj.set_service_template_properties(svc_properties)
+            self._vnc_lib.service_template_update(st_obj)
+            st_obj = self._vnc_lib.service_template_read(id=st_uuid)
+            return st_obj
+
     # TODO Create Service Appliance
+    def create_service_appliance(self, name, sas_obj):
+        default_gsc_name = "default-global-system-config"
+        sas_fq_name = sas_obj.get_fq_name()
+        right_attachment_point = ("qfx_routertest.test_dm_pnf_srvc_chaining."
+                                  "TestAnsiblePNFSrvcChainingDM."
+                                  "test_pnf_required_params:xe-1/1/0")
+        left_attachment_point = ("qfx_routertest.test_dm_pnf_srvc_chaining."
+                                 "TestAnsiblePNFSrvcChainingDM."
+                                 "test_pnf_required_params:xe-1/1/1")
+        pnf_left_intf = ("srx_routertest.test_dm_pnf_srvc_chaining."
+                         "TestAnsiblePNFSrvcChainingDM."
+                         "test_pnf_required_params:xe-1/0/0")
+        pnf_right_intf = ("srx_routertest.test_dm_pnf_srvc_chaining."
+                          "TestAnsiblePNFSrvcChainingDM."
+                          "test_pnf_required_params:xe-1/0/1")
+        try:
+            sas_obj = self._vnc_lib.service_appliance_set_read(
+                                                       fq_name=sas_fq_name)
+        except NoIdError:
+            print("Error: Service Appliance Set does not exist")
+            sys.exit(-1)
+
+        sa_obj = ServiceAppliance(name, sas_obj)
+
+        try:
+            kvp_array = []
+            kvp = KeyValuePair(
+                "left-attachment-point",
+                default_gsc_name + ':' + left_attachment_point)
+            kvp_array.append(kvp)
+            kvp = KeyValuePair(
+                "right-attachment-point",
+                default_gsc_name + ':' + right_attachment_point)
+            kvp_array.append(kvp)
+            kvps = KeyValuePairs()
+            kvps.set_key_value_pair(kvp_array)
+            sa_obj.set_service_appliance_properties(kvps)
+            sa_obj.set_service_appliance_virtualization_type("physical-device")
+        except AttributeError:
+            print("Warning: Some attributes of Service Appliance missing ")
+
+        try:
+            pnf_left_intf_obj = self._vnc_lib.physical_interface_read(
+                fq_name=[
+                    default_gsc_name, pnf_left_intf.split(":")[0],
+                    pnf_left_intf.split(":")[-1]])
+            attr = ServiceApplianceInterfaceType(interface_type='left')
+            sa_obj.add_physical_interface(pnf_left_intf_obj, attr)
+        except NoIdError:
+            print("Error: Left PNF interface does not exist")
+            sys.exit(-1)
+        except AttributeError:
+            print("Error: Left PNF interface missing")
+            sys.exit(-1)
+
+        try:
+            pnf_right_intf_obj = self._vnc_lib.physical_interface_read(
+                    fq_name=[
+                        default_gsc_name, pnf_right_intf.split(":")[0],
+                        pnf_right_intf.split(":")[-1]])
+            attr = ServiceApplianceInterfaceType(interface_type='right')
+            sa_obj.add_physical_interface(pnf_right_intf_obj, attr)
+        except NoIdError:
+            print("Error: Right PNF interface does not exist")
+            sys.exit(-1)
+        except AttributeError:
+            print("Error: Right PNF interface missing")
+            sys.exit(-1)
+
+        sa_uuid = self._vnc_lib.service_appliance_create(sa_obj)
+        sa_obj = self._vnc_lib.service_appliance_read(id=sa_uuid)
+
+        return sa_obj
+
     # TODO Create Service Instance
-    # TODO Create Logical Routers
+    def create_service_instance(self, name, st_obj):
+        si_obj = ServiceInstance(name=name)
+
+        si_obj.add_service_template(st_obj)
+
+        left_svc_vlan = '1000'
+        right_svc_vlan = '1001'
+        left_svc_asns = '66000, 66001'
+        right_svc_asns = '66000, 66002'
+
+        try:
+            kvp_array = []
+            kvp = KeyValuePair("left-svc-vlan", left_svc_vlan)
+            kvp_array.append(kvp)
+            kvp = KeyValuePair("right-svc-vlan", right_svc_vlan)
+            kvp_array.append(kvp)
+            kvp = KeyValuePair("left-svc-asns", left_svc_asns)
+            kvp_array.append(kvp)
+            kvp = KeyValuePair("right-svc-asns", right_svc_asns)
+            kvp_array.append(kvp)
+            kvps = KeyValuePairs()
+            kvps.set_key_value_pair(kvp_array)
+            si_obj.set_annotations(kvps)
+            props = ServiceInstanceType()
+            props.set_service_virtualization_type("physical-device")
+            props.set_ha_mode("active-standby")
+            si_obj.set_service_instance_properties(props)
+        except AttributeError:
+            print("Warning: Some attributes of Service Instance missing")
+
+        si_uuid = self._vnc_lib.service_instance_create(si_obj)
+        si_obj = self._vnc_lib.service_instance_read(id=si_uuid)
+
+        return si_obj
+
     # TODO Create Port Tuple
+    def create_port_tuple(self, name, si_obj):
+        si_fq_name = si_obj.get_fq_name()
+        left_lr_name = "left_lr"
+        right_lr_name = "right_lr"
+
+        try:
+            si_obj = self._vnc_lib.service_instance_read(fq_name=si_fq_name)
+        except NoIdError:
+            print "Service Instance Not found " + (si_name)
+            sys.exit(-1)
+
+        pt_obj = PortTuple(name, parent_obj=si_obj)
+
+        try:
+            left_lr_fq_name = ['default-domain',
+                               'default-project',
+                               left_lr_name]
+            right_lr_fq_name = ['default-domain',
+                                'default-project',
+                                right_lr_name]
+            left_lr_obj = self._vnc_lib.logical_router_read(
+                                                     fq_name=left_lr_fq_name)
+            right_lr_obj = self._vnc_lib.logical_router_read(
+                                                    fq_name=right_lr_fq_name)
+            pt_obj.add_logical_router(left_lr_obj)
+            pt_obj.add_logical_router(right_lr_obj)
+        except NoIdError as e:
+            print("Error! LR not found " + (e.message))
+            sys.exit(-1)
+
+        try:
+            kvp_array = []
+            kvp = KeyValuePair("left-lr", left_lr_obj.uuid)
+            kvp_array.append(kvp)
+            kvp = KeyValuePair("right-lr", right_lr_obj.uuid)
+            kvp_array.append(kvp)
+            kvps = KeyValuePairs()
+            kvps.set_key_value_pair(kvp_array)
+            pt_obj.set_annotations(kvps)
+        except AttributeError:
+            print("Warning: Some attributes of PT missing " + pt_name)
+
+        pt_uuid = self._vnc_lib.port_tuple_create(pt_obj)
+        pt_obj = self._vnc_lib.port_tuple_read(id=pt_uuid)
+
+        return pt_obj
+
+    def create_service_objects(self):
+        sas_obj = self.create_service_appliance_set(name="sas")
+        st_obj = self.create_service_template(name="st", sas_obj=sas_obj)
+        sa_obj = self.create_service_appliance(name="sa", sas_obj=sas_obj)
+        si_obj = self.create_service_instance(name="si", st_obj=st_obj)
+        pt_obj = self.create_port_tuple(name="pt", si_obj=si_obj)
+
+        return (sas_obj, st_obj, sa_obj, si_obj, pt_obj)
+
+    def delete_service_objects(self, sas, st, sa, si, pt):
+        # Delete Port Tuple
+        self._vnc_lib.port_tuple_delete(fq_name=pt.get_fq_name())
+        # Delete Service Instance
+        self._vnc_lib.service_instance_delete(fq_name=si.get_fq_name())
+        # Delete Service Appliance
+        self._vnc_lib.service_appliance_delete(fq_name=sa.get_fq_name())
+        # Delete Service Template
+        self._vnc_lib.service_template_delete(fq_name=st.get_fq_name())
+        # Delete Service Appliance Set
+        self._vnc_lib.service_appliance_set_delete(fq_name=sas.get_fq_name())
 
     def print_all_objects(self):
         # Print all job templates
@@ -141,5 +405,20 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         print(json.dumps(self._vnc_lib.physical_routers_list(), indent=4))
         # Print all bgp routers
         print(json.dumps(self._vnc_lib.bgp_routers_list(), indent=4))
+        # Print all logical routers
+        print(json.dumps(self._vnc_lib.logical_routers_list(), indent=4))
+        # Print all physical interfaces
+        print(json.dumps(self._vnc_lib.physical_interfaces_list(), indent=4))
+        # Print all sas objects
+        print(json.dumps(
+            self._vnc_lib.service_appliance_sets_list(), indent=4))
+        # Print all service template objects
+        print(json.dumps(self._vnc_lib.service_templates_list(), indent=4))
+        # Print all service appliance objects
+        print(json.dumps(self._vnc_lib.service_appliances_list(), indent=4))
+        # Print all service instance objects
+        print(json.dumps(self._vnc_lib.service_instances_list(), indent=4))
+        # Print all port tuples
+        print(json.dumps(self._vnc_lib.port_tuples_list(), indent=4))
 
 # end TestAnsiblePNFSrvcChainingDM
