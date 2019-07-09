@@ -144,7 +144,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
     def destroy_base_objects(
             self, job_template, fabric, node_profiles, role_configs,
             physical_routers, bgp_routers
-            ):
+    ):
         # Delete BGP Routers, Physical Routers
         for bgpr, pr in zip(bgp_routers, physical_routers):
             self.delete_routers(bgpr, pr)
@@ -228,7 +228,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
                           "test_pnf_required_params:xe-1/0/1")
         try:
             sas_obj = self._vnc_lib.service_appliance_set_read(
-                                                       fq_name=sas_fq_name)
+                fq_name=sas_fq_name)
         except NoIdError:
             print("Error: Service Appliance Set does not exist")
             sys.exit(-1)
@@ -268,9 +268,9 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
         try:
             pnf_right_intf_obj = self._vnc_lib.physical_interface_read(
-                    fq_name=[
-                        default_gsc_name, pnf_right_intf.split(":")[0],
-                        pnf_right_intf.split(":")[-1]])
+                fq_name=[
+                    default_gsc_name, pnf_right_intf.split(":")[0],
+                    pnf_right_intf.split(":")[-1]])
             attr = ServiceApplianceInterfaceType(interface_type='right')
             sa_obj.add_physical_interface(pnf_right_intf_obj, attr)
         except NoIdError:
@@ -345,9 +345,9 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
                                 'default-project',
                                 right_lr_name]
             left_lr_obj = self._vnc_lib.logical_router_read(
-                                                     fq_name=left_lr_fq_name)
+                fq_name=left_lr_fq_name)
             right_lr_obj = self._vnc_lib.logical_router_read(
-                                                    fq_name=right_lr_fq_name)
+                fq_name=right_lr_fq_name)
             pt_obj.add_logical_router(left_lr_obj)
             pt_obj.add_logical_router(right_lr_obj)
         except NoIdError as e:
