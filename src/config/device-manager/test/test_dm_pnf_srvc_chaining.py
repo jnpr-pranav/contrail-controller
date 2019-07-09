@@ -69,30 +69,26 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         for lr in [llr, rlr]:
             self._vnc_lib.logical_router_delete(fq_name=lr.get_fq_name())
 
-        # Destroy physical interfaces, vmis, vms and vn
-        self._vnc_lib.virtual_machine_interface_delete(
-            fq_name=vmi_srx.get_fq_name())
-        self._vnc_lib.virtual_machine_interface_delete(
-            fq_name=vmi_qfx.get_fq_name())
+        # Destroy vmis, vms, physical interfaces and vns
+        for vmi in [vmi_srx, vmi_qfx]:
+            self._vnc_lib.virtual_machine_interface_delete(
+                fq_name=vmi.get_fq_name())
 
-        self._vnc_lib.virtual_machine_delete(fq_name=vm_srx.get_fq_name())
-        self._vnc_lib.virtual_machine_delete(fq_name=vm_qfx.get_fq_name())
+        for vm in [vm_srx, vm_qfx]:
+            self._vnc_lib.virtual_machine_delete(fq_name=vm.get_fq_name())
 
-        for idx in range(len(pi_list_srx)):
-            self._vnc_lib.physical_interface_delete(
-                fq_name=pi_list_srx[idx].get_fq_name())
-        for idx in range(len(pi_list_qfx)):
-            self._vnc_lib.physical_interface_delete(
-                fq_name=pi_list_qfx[idx].get_fq_name())
+        for pi_list in [pi_list_srx, pi_list_qfx]:
+            for idx in range(len(pi_list)):
+                self._vnc_lib.physical_interface_delete(
+                    fq_name=pi_list[idx].get_fq_name())
 
-        self._vnc_lib.virtual_network_delete(fq_name=vn_obj_srx.get_fq_name())
-        self._vnc_lib.virtual_network_delete(fq_name=vn_obj_qfx.get_fq_name())
+        for vn_obj in [vn_obj_srx, vn_obj_qfx]:
+            self._vnc_lib.virtual_network_delete(fq_name=vn_obj.get_fq_name())
 
         # Destroy Base Objects
         self.destroy_base_objects(
             jt, fabric, node_profiles, role_configs,
             physical_routers, bgp_routers)
-
     # end test_pnf_required_params
 
     def create_base_objects(self):
@@ -143,7 +139,6 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
         return (jt, fabric, node_profiles, role_configs,
                 physical_routers, bgp_routers)
-
     # end create_required_objects
 
     def destroy_base_objects(
@@ -168,7 +163,6 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
         # Delete Job Temppalte
         self._vnc_lib.job_template_delete(fq_name=job_template.get_fq_name())
-
     # end destroy_created_objects
 
     # TODO Create VMI
@@ -187,6 +181,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         sas_obj = self._vnc_lib.service_appliance_set_read(id=sas_uuid)
 
         return sas_obj
+    # end create_service_appliance_set
 
     # TODO Create Service Template
     def create_service_template(self, name, sas_obj):
@@ -213,6 +208,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             self._vnc_lib.service_template_update(st_obj)
             st_obj = self._vnc_lib.service_template_read(id=st_uuid)
             return st_obj
+    # end create_service_template
 
     # TODO Create Service Appliance
     def create_service_appliance(self, name, sas_obj):
@@ -288,6 +284,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         sa_obj = self._vnc_lib.service_appliance_read(id=sa_uuid)
 
         return sa_obj
+    # end create_service_appliance
 
     # TODO Create Service Instance
     def create_service_instance(self, name, st_obj):
@@ -324,6 +321,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         si_obj = self._vnc_lib.service_instance_read(id=si_uuid)
 
         return si_obj
+    # end create_service_instance
 
     # TODO Create Port Tuple
     def create_port_tuple(self, name, si_obj):
@@ -372,6 +370,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         pt_obj = self._vnc_lib.port_tuple_read(id=pt_uuid)
 
         return pt_obj
+    # end create_port_tuple
 
     def create_service_objects(self):
         sas_obj = self.create_service_appliance_set(name="sas")
@@ -381,6 +380,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         pt_obj = self.create_port_tuple(name="pt", si_obj=si_obj)
 
         return (sas_obj, st_obj, sa_obj, si_obj, pt_obj)
+    # end create_service_objects
 
     def delete_service_objects(self, sas, st, sa, si, pt):
         # Delete Port Tuple
@@ -393,6 +393,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         self._vnc_lib.service_template_delete(fq_name=st.get_fq_name())
         # Delete Service Appliance Set
         self._vnc_lib.service_appliance_set_delete(fq_name=sas.get_fq_name())
+    # end delete_service_objects
 
     def print_all_objects(self):
         # Print all job templates
@@ -420,5 +421,5 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         print(json.dumps(self._vnc_lib.service_instances_list(), indent=4))
         # Print all port tuples
         print(json.dumps(self._vnc_lib.port_tuples_list(), indent=4))
-
+    # end print_all_objects
 # end TestAnsiblePNFSrvcChainingDM
