@@ -25,15 +25,9 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         srx = physical_routers[0]
         qfx = physical_routers[1]
 
-        # Add loopback IPs
-        srx.set_physical_router_loopback_ip('5.5.0.1')
-        self._vnc_lib.physical_router_update(srx)
-        qfx.set_physical_router_loopback_ip('6.6.0.1')
-        self._vnc_lib.physical_router_update(qfx)
-
         # Create PIs for SRX
         pi_list = []
-        srx_pis = ['xe-1/0/0', 'xe-1/0/1']
+        srx_pis = ['lo0', 'xe-1/0/0', 'xe-1/0/1']
         for idx in range(len(srx_pis)):
             pi = PhysicalInterface(srx_pis[idx], parent_obj=srx)
             pi_uuid = self._vnc_lib.physical_interface_create(pi)
@@ -41,12 +35,18 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             pi_list.append(pi)
 
         # Create PIs for QFX
-        qfx_pis = ['xe-1/1/0', 'xe-1/1/1']
+        qfx_pis = ['lo0', 'xe-1/1/0', 'xe-1/1/1']
         for idx in range(len(qfx_pis)):
             pi = PhysicalInterface(qfx_pis[idx], parent_obj=qfx)
             pi_uuid = self._vnc_lib.physical_interface_create(pi)
             pi = self._vnc_lib.physical_interface_read(id=pi_uuid)
             pi_list.append(pi)
+
+        # Add loopback IPs
+        srx.set_physical_router_loopback_ip('5.5.0.1')
+        self._vnc_lib.physical_router_update(srx)
+        qfx.set_physical_router_loopback_ip('6.6.0.1')
+        self._vnc_lib.physical_router_update(qfx)
 
         # Create Two Virtual Networks
         vlan_id_1 = 24
@@ -76,6 +76,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         # Create Service Objects
         (sas_obj, st_obj, sa_obj,
          si_obj, pt_obj) = self.create_service_objects()
+
+        gevent.sleep(1)
 
         # Destroy service objects
         self.delete_service_objects(sas_obj, st_obj, sa_obj, si_obj, pt_obj)
@@ -467,7 +469,6 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
         pt_uuid = self._vnc_lib.port_tuple_create(pt_obj)
         pt_obj = self._vnc_lib.port_tuple_read(id=pt_uuid)
-
         return pt_obj
     # end create_port_tuple
 
