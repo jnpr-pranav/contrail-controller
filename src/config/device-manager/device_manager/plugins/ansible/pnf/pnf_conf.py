@@ -4,9 +4,9 @@
 # This file contains implementation of abstract config generation for PNFs
 #
 
-from abstract_device_api.abstract_device_xsd import *
 from ansible_role_common import AnsibleRoleCommon
 from db import *
+from abstract_device_api.abstract_device_xsd import *
 
 
 class PnfConf(AnsibleRoleCommon):
