@@ -172,12 +172,247 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
     # end test_pnf_roles_availability
 
     def test_lr_type(self):
-        pass
+        # Create base objects
+        (
+            jt,
+            fabric,
+            node_profiles,
+            role_configs,
+            physical_routers,
+            bgp_routers,
+            subnet_objects,
+        ) = self.create_base_objects()
+
+        # Get Individual Physical Routers
+        srx = physical_routers[0]
+        qfx = physical_routers[1]
+
+        # Create PIs for SRX
+        pi_list = []
+        srx_pis = ["lo0", "xe-1/0/0", "xe-1/0/1"]
+        for idx in range(len(srx_pis)):
+            pi = PhysicalInterface(srx_pis[idx], parent_obj=srx)
+            pi_uuid = self._vnc_lib.physical_interface_create(pi)
+            pi = self._vnc_lib.physical_interface_read(id=pi_uuid)
+            pi_list.append(pi)
+
+        # Create PIs for QFX
+        qfx_pis = ["xe-1/1/0", "xe-1/1/1"]
+        for idx in range(len(qfx_pis)):
+            pi = PhysicalInterface(qfx_pis[idx], parent_obj=qfx)
+            pi_uuid = self._vnc_lib.physical_interface_create(pi)
+            pi = self._vnc_lib.physical_interface_read(id=pi_uuid)
+            pi_list.append(pi)
+
+        # Create Two Virtual Networks
+        vlan_id_1 = 24
+        vlan_id_2 = 42
+
+        vn1 = self.create_vn(str(vlan_id_1), "7.7.7.0")
+        vn2 = self.create_vn(str(vlan_id_2), "8.8.8.0")
+
+        # Create VMI
+        vmi_1 = self.create_vmi(str(vlan_id_1), vn1)
+        vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
+
+        # Create Left Logical Router
+        llr = LogicalRouter("left_lr")
+        llr.set_physical_router(qfx)
+        llr.set_virtual_machine_interface(vmi_1)
+        llr_uuid = self._vnc_lib.logical_router_create(llr)
+        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+
+        # Create Right Logical Router
+        rlr = LogicalRouter("right_lr")
+        rlr.set_physical_router(qfx)
+        rlr.set_virtual_machine_interface(vmi_2)
+        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
+        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+
+        # Create Service Objects
+        (
+            sas_obj,
+            st_obj,
+            sa_obj,
+            si_obj,
+            pt_obj,
+        ) = self.create_service_objects()
+
+        # Add loopback ip to force abstract config generation
+        qfx.set_physical_router_loopback_ip("6.6.0.1")
+        self._vnc_lib.physical_router_update(qfx)
+
+        gevent.sleep(1)
+        qfx_abstract_config = self.check_dm_ansible_config_push()
+
+        qfx_device_abstract_config = qfx_abstract_config.get(
+            "device_abstract_config"
+        )
+        qfx_routing_instances = qfx_device_abstract_config.get(
+            "routing_instances"
+        )
+
+        # When lr-type is not set to vxlan-routing, there will
+        # be no internal vn's created
+        internal_vn_identifier = '"virtual_network_is_internal": true'
+        self.assertTrue(
+            internal_vn_identifier not in str(qfx_routing_instances)
+        )
+
+        # Destroy service objects
+        self.delete_service_objects(sas_obj, st_obj, sa_obj, si_obj, pt_obj)
+
+        # Destroy Logical Routers
+        for lr in [llr, rlr]:
+            self._vnc_lib.logical_router_delete(fq_name=lr.get_fq_name())
+
+        # Destroy vmis, vns and physical interfaces
+        for vmi in [vmi_1, vmi_2]:
+            self._vnc_lib.virtual_machine_interface_delete(
+                fq_name=vmi.get_fq_name()
+            )
+
+        for vn in [vn1, vn2]:
+            self._vnc_lib.virtual_network_delete(fq_name=vn.get_fq_name())
+
+        for idx in range(len(pi_list)):
+            self._vnc_lib.physical_interface_delete(
+                fq_name=pi_list[idx].get_fq_name()
+            )
+
+        # Destroy Base Objects
+        self.destroy_base_objects(
+            jt,
+            fabric,
+            node_profiles,
+            role_configs,
+            physical_routers,
+            bgp_routers,
+            subnet_objects,
+        )
 
     # end test_lr_type
 
     def test_pt_lr_assoc(self):
-        pass
+        # Create base objects
+        (
+            jt,
+            fabric,
+            node_profiles,
+            role_configs,
+            physical_routers,
+            bgp_routers,
+            subnet_objects,
+        ) = self.create_base_objects()
+
+        # Get Individual Physical Routers
+        srx = physical_routers[0]
+        qfx = physical_routers[1]
+
+        # Create PIs for SRX
+        pi_list = []
+        srx_pis = ["lo0", "xe-1/0/0", "xe-1/0/1"]
+        for idx in range(len(srx_pis)):
+            pi = PhysicalInterface(srx_pis[idx], parent_obj=srx)
+            pi_uuid = self._vnc_lib.physical_interface_create(pi)
+            pi = self._vnc_lib.physical_interface_read(id=pi_uuid)
+            pi_list.append(pi)
+
+        # Create PIs for QFX
+        qfx_pis = ["xe-1/1/0", "xe-1/1/1"]
+        for idx in range(len(qfx_pis)):
+            pi = PhysicalInterface(qfx_pis[idx], parent_obj=qfx)
+            pi_uuid = self._vnc_lib.physical_interface_create(pi)
+            pi = self._vnc_lib.physical_interface_read(id=pi_uuid)
+            pi_list.append(pi)
+
+        # Create Two Virtual Networks
+        vlan_id_1 = 24
+        vlan_id_2 = 42
+
+        vn1 = self.create_vn(str(vlan_id_1), "7.7.7.0")
+        vn2 = self.create_vn(str(vlan_id_2), "8.8.8.0")
+
+        # Create VMI
+        vmi_1 = self.create_vmi(str(vlan_id_1), vn1)
+        vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
+
+        # Create Left Logical Router
+        llr = LogicalRouter("left_lr")
+        llr.set_logical_router_type("vxlan-routing")
+        llr.set_physical_router(qfx)
+        llr.set_virtual_machine_interface(vmi_1)
+        llr_uuid = self._vnc_lib.logical_router_create(llr)
+        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+
+        # Create Right Logical Router
+        rlr = LogicalRouter("right_lr")
+        rlr.set_logical_router_type("vxlan-routing")
+        rlr.set_physical_router(qfx)
+        rlr.set_virtual_machine_interface(vmi_2)
+        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
+        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+
+        # Create Service Objects
+        (
+            sas_obj,
+            st_obj,
+            sa_obj,
+            si_obj,
+            pt_obj,
+        ) = self.create_service_objects()
+
+        # Delete the logical routers from the port tuple
+        pt_obj.del_logical_router(llr)
+        pt_obj.del_logical_router(rlr)
+
+        self._vnc_lib.port_tuple_update(pt_obj)
+
+        qfx.set_physical_router_loopback_ip("6.6.0.1")
+        self._vnc_lib.physical_router_update(qfx)
+        gevent.sleep(1)
+        qfx_abstract_config = self.check_dm_ansible_config_push()
+
+        qfx_device_abstract_config = qfx_abstract_config.get(
+            "device_abstract_config"
+        )
+
+        # Physical Interfaces now should not contain interfaces of type service
+        phy_intfs = str(qfx_device_abstract_config.get("physical_interfaces"))
+        if_type_identifier = '"interface_type": "service"'
+        self.assertTrue(if_type_identifier not in phy_intfs)
+
+        # Destroy service objects
+        self.delete_service_objects(sas_obj, st_obj, sa_obj, si_obj, pt_obj)
+
+        # Destroy Logical Routers
+        for lr in [llr, rlr]:
+            self._vnc_lib.logical_router_delete(fq_name=lr.get_fq_name())
+
+        # Destroy vmis, vns and physical interfaces
+        for vmi in [vmi_1, vmi_2]:
+            self._vnc_lib.virtual_machine_interface_delete(
+                fq_name=vmi.get_fq_name()
+            )
+
+        for vn in [vn1, vn2]:
+            self._vnc_lib.virtual_network_delete(fq_name=vn.get_fq_name())
+
+        for idx in range(len(pi_list)):
+            self._vnc_lib.physical_interface_delete(
+                fq_name=pi_list[idx].get_fq_name()
+            )
+
+        # Destroy Base Objects
+        self.destroy_base_objects(
+            jt,
+            fabric,
+            node_profiles,
+            role_configs,
+            physical_routers,
+            bgp_routers,
+            subnet_objects,
+        )
 
     # end test_pt_lr_assoc
 
