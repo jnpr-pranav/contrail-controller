@@ -1161,7 +1161,7 @@
         },
         {
           "fq_name": [
-            "default-global-system-config", "pnf-service_chaining"
+            "default-global-system-config", "pnf-service-chaining"
           ],
           "name": "pnf-service-chaining"
         }
@@ -1181,6 +1181,12 @@
             "default-global-system-config", "spine"
           ],
           "name": "spine"
+        },
+        {
+          "fq_name": [
+            "default-global-system-config", "pnf"
+          ],
+          "name": "pnf"
         }
       ]
     },
@@ -1240,6 +1246,12 @@
             "default-global-system-config", "ar-replicator"
           ],
           "name": "ar-replicator"
+        },
+        {
+          "fq_name": [
+            "default-global-system-config", "PNF-Servicechain"
+          ],
+          "name": "PNF-Servicechain"
         }
       ]
     },
@@ -1335,6 +1347,24 @@
             "default-global-system-config", "ar-replicator-spine"
           ],
           "name": "ar-replicator-spine"
+        },
+        {
+          "fq_name": [
+            "default-global-system-config", "PNF-Servicechain-pnf"
+          ],
+          "name": "PNF-Servicechain-pnf"
+        },
+        {
+          "fq_name": [
+            "default-global-system-config", "PNF-Servicechain-spine"
+          ],
+          "name": "PNF-Servicechain-spine"
+        },
+        {
+          "fq_name": [
+            "default-global-system-config", "PNF-Servicechain-leaf"
+          ],
+          "name": "PNF-Servicechain-leaf"
         }
       ]
     },
@@ -1922,6 +1952,60 @@
       "from_fq_name": [ "default-global-system-config", "ar-client-spine" ],
       "to_type": "overlay-role",
       "to_fq_name": [ "default-global-system-config", "ar-client" ]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-pnf"],
+      "to_type": "feature",
+      "to_fq_name": ["default-global-system-config", "pnf-service-chaining"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-spine"],
+      "to_type": "feature",
+      "to_fq_name": ["default-global-system-config", "pnf-service-chaining"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-leaf"],
+      "to_type": "feature",
+      "to_fq_name": ["default-global-system-config", "pnf-service-chaining"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-pnf"],
+      "to_type": "physical-role",
+      "to_fq_name": ["default-global-system-config", "pnf"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-spine"],
+      "to_type": "physical-role",
+      "to_fq_name": ["default-global-system-config", "spine"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-leaf"],
+      "to_type": "physical-role",
+      "to_fq_name": ["default-global-system-config", "leaf"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-pnf"],
+      "to_type": "overlay-role",
+      "to_fq_name": ["default-global-system-config", "PNF-Servicechain"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-spine"],
+      "to_type": "overlay-role",
+      "to_fq_name": ["default-global-system-config", "PNF-Servicechain"]
+    },
+    {
+      "from_type": "role-definition",
+      "from_fq_name": ["default-global-system-config", "PNF-Servicechain-leaf"],
+      "to_type": "overlay-role",
+      "to_fq_name": ["default-global-system-config", "PNF-Servicechain"]
     },
     {
       "from_type": "node-profile",
