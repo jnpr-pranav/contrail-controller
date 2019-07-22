@@ -1,9 +1,8 @@
 #
 # Copyright (c) 2019 Juniper Networks, Inc. All rights reserved.
 #
-"""
-PNF Service Chaining Feature Implementation
-"""
+
+"""PNF Service Chaining Feature Implementation."""
 
 from abstract_device_api.abstract_device_xsd import *
 import db
