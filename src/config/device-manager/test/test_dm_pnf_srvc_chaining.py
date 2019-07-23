@@ -14,7 +14,7 @@ from vnc_api.vnc_api import *
 
 
 class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
-    def test_pnf_roles_availability(self):
+    def atest_pnf_roles_availability(self):
         # Create base objects
         (
             jt,
@@ -171,7 +171,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_pnf_roles_availability
 
-    def test_lr_type(self):
+    def atest_lr_type(self):
         # Create base objects
         (
             jt,
@@ -293,7 +293,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_lr_type
 
-    def test_pt_lr_assoc(self):
+    def atest_pt_lr_assoc(self):
         # Create base objects
         (
             jt,
@@ -416,7 +416,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_pt_lr_assoc
 
-    def test_subnets_availability(self):
+    def atest_subnets_availability(self):
         # Create base objects
         (
             jt,
@@ -533,7 +533,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_subnets_availability
 
-    def test_vmi_availability(self):
+    def atest_vmi_availability(self):
         # Create base objects
         (
             jt,
@@ -675,7 +675,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_vmi_availability
 
-    def test_service_objects_availability(self):
+    def atest_service_objects_availability(self):
         # Create base objects
         (
             jt,
@@ -784,7 +784,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_service_objects_availability
 
-    def test_config(self):
+    def atest_config(self):
         # Create base objects
         (
             jt,

@@ -26,13 +26,13 @@ class PnfConf(AnsibleRoleCommon):
         return super(PnfConf, cls).register(qconf)
     # end register
 
-    def push_conf(self, is_delete=False, **kwargs):
+    def push_conf(self, feature_configs=None, is_delete=False, **kwargs):
         if not self.physical_router:
             return 0
         if is_delete:
             return self.send_conf(is_delete=True)
         self.set_pnf_config()
-        return self.send_conf()
+        return self.send_conf(feature_configs=feature_configs)
     # end push_conf
 
     def build_pnf_svc_sc_zone_policy_config(self, svc_params):

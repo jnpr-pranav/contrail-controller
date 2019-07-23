@@ -19,6 +19,7 @@ class PNFSrvcChainingFeature(FeatureBase):
 
     def __init__(self, logger, physical_router, configs):
         self.pi_map = {}
+        self.pi_map_leafspine = {}
         self.ri_map = {}
         self.ri_map_leafspine = {}
         self.sc_zone_map = {}
@@ -592,7 +593,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                             irb_addr = iip_obj.instance_ip_address
                             irb_unit = left_svc_unit
                             left_irb_intf, li_map = self._add_or_lookup_pi(
-                                "irb", "irb"
+                                self.pi_map_leafspine, "irb", "irb"
                             )
                             intf_unit = self._add_or_lookup_li(
                                 li_map, "irb." + str(irb_unit), irb_unit
@@ -615,7 +616,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                             # create logical interfaces for the aggregated
                             # interfaces
                             left_svc_intf, li_map = self._add_or_lookup_pi(
-                                spine_pi_obj.name, "service"
+                                self.pi_map_leafspine, spine_pi_obj.name, "service"
                             )
                             left_svc_intf_unit = self._add_or_lookup_li(
                                 li_map, left_fq_name[-1] + ".0", "0"
@@ -640,7 +641,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                             irb_addr = iip_obj.instance_ip_address
                             irb_unit = right_svc_unit
                             right_irb_intf, li_map = self._add_or_lookup_pi(
-                                "irb", "irb"
+                                self.pi_map_leafspine, "irb", "irb"
                             )
                             intf_unit = self._add_or_lookup_li(
                                 li_map, "irb." + str(irb_unit), irb_unit
@@ -663,7 +664,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                             # create logical interfaces for the aggregated
                             # interfaces
                             right_svc_intf, li_map = self._add_or_lookup_pi(
-                                spine_pi_obj.name, "service"
+                                self.pi_map_leafspine, spine_pi_obj.name, "service"
                             )
                             right_svc_intf_unit = self._add_or_lookup_li(
                                 li_map, right_fq_name[-1] + ".0", "0"
@@ -801,7 +802,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                     if intf_type.get("interface_type") == "right":
                         pnf_pi_obj = db.PhysicalInterfaceDM(pnf_pi)
                         for li in pnf_pi_obj.logical_interfaces:
-                            li_obj = db.LogicalInterfaceDM(li)
+                            li_obj = db.LogicalInterfaceDM.get(li)
                             if li_obj:
                                 vlan = li_obj.fq_name[-1].split(".")[-1]
                                 if right_svc_vlan == vlan:
@@ -849,7 +850,7 @@ class PNFSrvcChainingFeature(FeatureBase):
         if not pr:
             return
 
-        feature_config = Feature(name=self.feature_name)
+        feature_config = Feature(name=self.feature_name())
 
         if pr.physical_router_role == "pnf":
             self.build_pnf_svc_config()
@@ -870,8 +871,14 @@ class PNFSrvcChainingFeature(FeatureBase):
                 self._get_values_sorted_by_key(self.sc_policy_map)
             )
 
+            return feature_config
+
         elif pr.physical_router_role in ["leaf", "spine"]:
             self.build_svc_chaining_config()
+
+            for pi, li_map in self.pi_map_leafspine.values():
+                pi.set_logical_interfaces(li_map.values())
+                feature_config.add_physical_interfaces(pi)
 
             feature_config.set_vlans(
                 self._get_values_sorted_by_key(self.vlan_map)
@@ -880,6 +887,8 @@ class PNFSrvcChainingFeature(FeatureBase):
             feature_config.set_routing_instances(
                 self._get_values_sorted_by_key(self.ri_map_leafspine)
             )
+
+            return feature_config
 
         else:
             return
