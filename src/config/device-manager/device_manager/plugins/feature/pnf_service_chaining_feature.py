@@ -616,7 +616,9 @@ class PNFSrvcChainingFeature(FeatureBase):
                             # create logical interfaces for the aggregated
                             # interfaces
                             left_svc_intf, li_map = self._add_or_lookup_pi(
-                                self.pi_map_leafspine, spine_pi_obj.name, "service"
+                                self.pi_map_leafspine,
+                                spine_pi_obj.name,
+                                "service",
                             )
                             left_svc_intf_unit = self._add_or_lookup_li(
                                 li_map, left_fq_name[-1] + ".0", "0"
@@ -664,7 +666,9 @@ class PNFSrvcChainingFeature(FeatureBase):
                             # create logical interfaces for the aggregated
                             # interfaces
                             right_svc_intf, li_map = self._add_or_lookup_pi(
-                                self.pi_map_leafspine, spine_pi_obj.name, "service"
+                                self.pi_map_leafspine,
+                                spine_pi_obj.name,
+                                "service",
                             )
                             right_svc_intf_unit = self._add_or_lookup_li(
                                 li_map, right_fq_name[-1] + ".0", "0"

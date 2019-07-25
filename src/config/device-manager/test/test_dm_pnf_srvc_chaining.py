@@ -1,20 +1,16 @@
 #
 # Copyright (c) 2019 Juniper Networks, Inc. All rights reserved.
 #
-import gevent
-import json
 import sys
+
 from attrdict import AttrDict
-from device_manager.device_manager import DeviceManager
-from cfgm_common.tests.test_common import retries
-from cfgm_common.tests.test_common import retry_exc_handler
+import gevent
 from test_dm_ansible_common import TestAnsibleCommonDM
-from test_dm_utils import FakeJobHandler
 from vnc_api.vnc_api import *
 
 
 class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
-    def atest_pnf_roles_availability(self):
+    def test_pnf_roles_availability(self):
         # Create base objects
         (
             jt,
@@ -91,9 +87,12 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         srx_device_abstract_config = srx_abstract_config.get(
             "device_abstract_config"
         )
+        srx_pnf_feature_config = srx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
 
         # srx abstract config will not have security zones now
-        security_policies = srx_device_abstract_config.get("security_policies")
+        security_policies = srx_pnf_feature_config.get("security_policies")
         self.assertIsNone(security_policies)
 
         # Adding it back should generate the full service chaining config
@@ -104,7 +103,11 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         srx_device_abstract_config = srx_abstract_config.get(
             "device_abstract_config"
         )
-        security_policies = srx_device_abstract_config.get("security_policies")
+        srx_pnf_feature_config = srx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
+
+        security_policies = srx_pnf_feature_config.get("security_policies")
         self.assertIsNotNone(security_policies)
 
         # Remove PNF as a rb role from qfx
@@ -117,24 +120,31 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         qfx_device_abstract_config = qfx_abstract_config.get(
             "device_abstract_config"
         )
+        qfx_pnf_feature_config = qfx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
 
         # There should be no vlans key in the abstract config now
-        vlans = qfx_device_abstract_config.get("vlans")
+        vlans = qfx_pnf_feature_config.get("vlans")
         self.assertIsNone(vlans)
 
         # Adding the pnf role back should bring it back
         qfx.routing_bridging_roles = RoutingBridgingRolesType(
             rb_roles=["CRB-MCAST-Gateway", "PNF-Servicechain"]
         )
+
         self._vnc_lib.physical_router_update(qfx)
         gevent.sleep(1)
         qfx_abstract_config = self.check_dm_ansible_config_push()
         qfx_device_abstract_config = qfx_abstract_config.get(
             "device_abstract_config"
         )
+        qfx_pnf_feature_config = qfx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
 
         # There should be no vlans key in the abstract config now
-        vlans = qfx_device_abstract_config.get("vlans")
+        vlans = qfx_pnf_feature_config.get("vlans")
         self.assertIsNotNone(vlans)
 
         # Destroy service objects
@@ -171,7 +181,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_pnf_roles_availability
 
-    def atest_lr_type(self):
+    def test_lr_type(self):
         # Create base objects
         (
             jt,
@@ -293,7 +303,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_lr_type
 
-    def atest_pt_lr_assoc(self):
+    def test_pt_lr_assoc(self):
         # Create base objects
         (
             jt,
@@ -376,9 +386,12 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         qfx_device_abstract_config = qfx_abstract_config.get(
             "device_abstract_config"
         )
+        qfx_pnf_feature_config = qfx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
 
         # Physical Interfaces now should not contain interfaces of type service
-        phy_intfs = str(qfx_device_abstract_config.get("physical_interfaces"))
+        phy_intfs = str(qfx_pnf_feature_config.get("physical_interfaces"))
         if_type_identifier = '"interface_type": "service"'
         self.assertTrue(if_type_identifier not in phy_intfs)
 
@@ -416,7 +429,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_pt_lr_assoc
 
-    def atest_subnets_availability(self):
+    def test_subnets_availability(self):
         # Create base objects
         (
             jt,
@@ -494,9 +507,11 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         srx_device_abstract_config = srx_abstract_config.get(
             "device_abstract_config"
         )
-        physical_interfaces = srx_device_abstract_config.get(
-            "physical_interfaces"
-        )
+        srx_pnf_feature_config = srx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
+
+        physical_interfaces = srx_pnf_feature_config.get("physical_interfaces")
         self.assertIsNone(physical_interfaces)
 
         # Destroy service objects
@@ -533,7 +548,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_subnets_availability
 
-    def atest_vmi_availability(self):
+    def test_vmi_availability(self):
         # Create base objects
         (
             jt,
@@ -675,7 +690,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_vmi_availability
 
-    def atest_service_objects_availability(self):
+    def test_service_objects_availability(self):
         # Create base objects
         (
             jt,
@@ -784,7 +799,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end test_service_objects_availability
 
-    def atest_config(self):
+    def test_config(self):
         # Create base objects
         (
             jt,
@@ -863,91 +878,76 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             "device_abstract_config"
         )
 
+        srx_pnf_feature_config = srx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
+
         # Verify security policies
-        security_policies = srx_device_abstract_config.get("security_policies")
+        security_policies = str(
+            srx_pnf_feature_config.get("security_policies")
+        )
 
-        sc_pol_1_to = security_policies[0].get("to_zone")
-        self.assertEqual(sc_pol_1_to, "si_right")
-        sc_pol_1_from = security_policies[0].get("from_zone")
-        self.assertEqual(sc_pol_1_from, "si_left")
+        to_zone_1 = "'to_zone': 'si_right'"
+        to_zone_2 = "'to_zone': 'si_left'"
+        from_zone_1 = "'from_zone': 'si_left'"
+        from_zone_2 = "'from_zone': 'si_left'"
+        zones = [to_zone_1, to_zone_2, from_zone_1, from_zone_2]
 
-        sc_pol_2_to = security_policies[1].get("to_zone")
-        self.assertEqual(sc_pol_2_to, "si_left")
-        sc_pol_2_from = security_policies[1].get("from_zone")
-        self.assertEqual(sc_pol_2_from, "si_right")
+        self.assertTrue(all(zone in security_policies for zone in zones))
 
         # Verify security zones
-        security_zones = srx_device_abstract_config.get("security_zones")
+        security_zones = str(srx_pnf_feature_config.get("security_zones"))
 
-        security_zone_left = security_zones[0].get("interfaces")[0].get("name")
-        self.assertEqual(security_zone_left, "xe-1/0/0.1000")
+        zone_1 = "xe-1/0/0.1000"
+        zone_2 = "xe-1/0/1.1001"
 
-        security_zone_right = (
-            security_zones[1].get("interfaces")[0].get("name")
+        self.assertTrue(
+            (zone_1 in security_zones) and (zone_2 in security_zones)
         )
-        self.assertEqual(security_zone_right, "xe-1/0/1.1001")
 
         # Verify srx left and right interfaces
-        srx_left = (
-            srx_device_abstract_config.get("physical_interfaces")[1]
-            .get("logical_interfaces")[0]
-            .get("name")
+        srx_physical_interfaces = str(
+            srx_pnf_feature_config.get("physical_interfaces")
         )
-        self.assertEqual(srx_left, "xe-1/0/0.1000")
+        left_interface = "xe-1/0/0.1000"
+        right_interface = "xe-1/0/1.1001"
 
-        srx_right = (
-            srx_device_abstract_config.get("physical_interfaces")[2]
-            .get("logical_interfaces")[0]
-            .get("name")
+        self.assertTrue(
+            (left_interface in srx_physical_interfaces)
+            and (right_interface in srx_physical_interfaces)
         )
-        self.assertEqual(srx_right, "xe-1/0/1.1001")
 
         # Verify loopback interfaces
-        srx_lo0 = (
-            srx_device_abstract_config.get("routing_instances")[0]
-            .get("loopback_interfaces")[0]
-            .get("name")
-        )
-        self.assertEqual(srx_lo0, "lo0.1000")
+        logical_interface = "lo0.1000"
+        self.assertTrue(logical_interface in srx_physical_interfaces)
 
         # Verify bgp
-        srx_bgp = (
-            srx_device_abstract_config.get("routing_instances")[0]
+        srx_bgp = str(
+            srx_pnf_feature_config.get("routing_instances")[0]
             .get("protocols")
             .get("bgp")
         )
 
-        left_bgp_grp_name = srx_bgp[0].get("name")
-        self.assertEqual(left_bgp_grp_name, "si_left")
+        left_bgp_grp = "si_left"
+        right_bgp_grp = "si_right"
+        ip_prefix = "1.1.1"
+        bgp_identifiers = [left_bgp_grp, right_bgp_grp, ip_prefix]
 
-        left_bgp_grp_ip = srx_bgp[0].get("ip_address")
-        self.assertTrue(left_bgp_grp_ip.startswith("1.1.1"))
-
-        right_bgp_grp_name = srx_bgp[1].get("name")
-        self.assertEqual(right_bgp_grp_name, "si_right")
-
-        right_bgp_grp_ip = srx_bgp[1].get("ip_address")
-        self.assertTrue(right_bgp_grp_ip.startswith("1.1.1"))
+        self.assertTrue(all(item in srx_bgp for item in bgp_identifiers))
 
         # Verify pim interfaces and rp
-        srx_pim = (
-            srx_device_abstract_config.get("routing_instances")[0]
+        srx_pim = str(
+            srx_pnf_feature_config.get("routing_instances")[0]
             .get("protocols")
             .get("pim")[0]
         )
 
-        pim_interface_1 = (
-            srx_pim.get("pim_interfaces")[0].get("interface").get("name")
-        )
-        self.assertEqual(pim_interface_1, "xe-1/0/0.1000")
+        pim_interface_1 = "xe-1/0/0.1000"
+        pim_interface_2 = "xe-1/0/1.1001"
+        pim_rp_ip_prefix = "3.3.3"
+        pim_objects = [pim_interface_1, pim_interface_2, pim_rp_ip_prefix]
 
-        pim_interface_2 = (
-            srx_pim.get("pim_interfaces")[1].get("interface").get("name")
-        )
-        self.assertEqual(pim_interface_2, "xe-1/0/1.1001")
-
-        pim_rp = srx_pim.get("rp").get("ip_address")
-        self.assertTrue(pim_rp.startswith("3.3.3"))
+        self.assertTrue(all(item in srx_pim for item in pim_objects))
 
         # Add qfx loopback ip to force qfx abstract config generation
         qfx.set_physical_router_loopback_ip("6.6.0.1")
@@ -959,11 +959,17 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             "device_abstract_config"
         )
 
+        qfx_pnf_feature_config = qfx_device_abstract_config.get(
+            "features"
+        ).get("pnf-service-chaining")
+
         # Verify qfx vlans
-        vlan1 = qfx_device_abstract_config.get("vlans")[0].get("vlan_id")
-        self.assertEqual(vlan1, "1000")
-        vlan2 = qfx_device_abstract_config.get("vlans")[1].get("vlan_id")
-        self.assertEqual(vlan2, "1001")
+        vlans = str(qfx_pnf_feature_config.get("vlans"))
+
+        vlan1 = "1000"
+        vlan2 = "1001"
+
+        self.assertTrue((vlan1 in vlans) and (vlan2 in vlans))
 
         # Verify that srx is a BGP peer of qfx
         bpg_peer_ip = (
@@ -974,74 +980,30 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         self.assertEqual(bpg_peer_ip, "2.2.2.2")
 
         # Verify qfx left and right interfaces
-        qfx_right = (
-            qfx_device_abstract_config.get("physical_interfaces")[2]
-            .get("logical_interfaces")[0]
-            .get("name")
-        )
-        self.assertEqual(qfx_right, "xe-1/1/0.0")
-        qfx_left = (
-            qfx_device_abstract_config.get("physical_interfaces")[3]
-            .get("logical_interfaces")[0]
-            .get("name")
-        )
-        self.assertEqual(qfx_left, "xe-1/1/1.0")
+        qfx_pis = str(qfx_pnf_feature_config.get("physical_interfaces"))
+
+        qfx_left = "xe-1/1/1.0"
+        qfx_right = "xe-1/1/0.0"
+
+        self.assertTrue((qfx_left in qfx_pis) and (qfx_right in qfx_pis))
 
         # Verify service asns
-        qfx_ri1_bgp = (
-            qfx_device_abstract_config.get("routing_instances")[0]
-            .get("protocols")
-            .get("bgp")[0]
-        )
+        qfx_ris = str(qfx_pnf_feature_config.get("routing_instances"))
 
-        qfx_ri1_bgp_asn = qfx_ri1_bgp.get("autonomous_system")
-        qfx_ri1_type = (
-            "left" if ("left" in qfx_ri1_bgp.get("name")) else "right"
-        )
+        asn1 = "66001"
+        asn2 = "66002"
 
-        qfx_ri2_bgp = (
-            qfx_device_abstract_config.get("routing_instances")[1]
-            .get("protocols")
-            .get("bgp")[0]
-        )
-        qfx_ri2_bgp_asn = qfx_ri2_bgp.get("autonomous_system")
-
-        if qfx_ri1_type is "left":
-            self.assertEqual(qfx_ri1_bgp_asn, "66001")
-            self.assertEqual(qfx_ri2_bgp_asn, "66002")
-        else:
-            self.assertEqual(qfx_ri2_bgp_asn, "66001")
-            self.assertEqual(qfx_ri1_bgp_asn, "66002")
+        self.assertTrue((asn1 in qfx_ris) and (asn2 in qfx_ris))
 
         # Verify qfx pim rp
-        pim1_rp = (
-            qfx_device_abstract_config.get("routing_instances")[0]
-            .get("protocols")
-            .get("pim")[0]
-            .get("rp")
-            .get("ip_address")
-        )
-        self.assertTrue(pim1_rp.startswith("3.3.3"))
-
-        pim2_rp = (
-            qfx_device_abstract_config.get("routing_instances")[0]
-            .get("protocols")
-            .get("pim")[0]
-            .get("rp")
-            .get("ip_address")
-        )
-        self.assertTrue(pim2_rp.startswith("3.3.3"))
+        self.assertEqual(qfx_ris.count(pim_rp_ip_prefix), 2)
 
         # Verify routing instance vxlan ids
-        vxlan_id_1 = qfx_device_abstract_config.get("routing_instances")[
-            2
-        ].get("vxlan_id")
-        self.assertEqual(vxlan_id_1, "2024")
+        vxlan_id_1 = "2024"
+        vxlan_id_2 = "2042"
+        qfx_ris = str(qfx_device_abstract_config.get("routing_instances"))
 
-        vxlan_id_2 = qfx_device_abstract_config.get("routing_instances")[
-            5
-        ].get("vxlan_id")
-        self.assertEqual(vxlan_id_2, "2042")
+        self.assertTrue((vxlan_id_1 in qfx_ris) and (vxlan_id_2 in qfx_ris))
 
         # Destroy service objects
         self.delete_service_objects(sas_obj, st_obj, sa_obj, si_obj, pt_obj)
@@ -1149,6 +1111,32 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
     # end create_fabric_subnet_objects
 
     def create_base_objects(self, subnets=True):
+        self.create_features(["pnf-service-chaining"])
+        self.create_physical_roles(["pnf", "spine"])
+        self.create_overlay_roles(["pnf-servicechain"])
+        self.create_role_definitions(
+            [
+                AttrDict(
+                    {
+                        "name": "pnf-servicechain-pnf",
+                        "physical_role": "pnf",
+                        "overlay_role": "pnf-servicechain",
+                        "features": ["pnf-service-chaining"],
+                        "feature_configs": None,
+                    }
+                ),
+                AttrDict(
+                    {
+                        "name": "pnf-servicechain-spine",
+                        "physical_role": "spine",
+                        "overlay_role": "pnf-servicechain",
+                        "features": ["pnf-service-chaining"],
+                        "feature_configs": None,
+                    }
+                ),
+            ]
+        )
+
         jt = self.create_job_template("job-template-1")
         fabric = self.create_fabric("fabric-1")
         subnet_objects = []
@@ -1188,6 +1176,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             family="junos-es",
             role="pnf",
             rb_roles=["PNF-Servicechain"],
+            physical_role=self.physical_roles["pnf"],
+            overlay_role=self.overlay_roles["pnf-servicechain"],
             fabric=fabric,
             node_profile=np_srx,
         )
@@ -1199,6 +1189,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             family="junos-qfx",
             role="spine",
             rb_roles=["CRB-MCAST-Gateway", "PNF-Servicechain"],
+            physical_role=self.physical_roles["spine"],
+            overlay_role=self.overlay_roles["pnf-servicechain"],
             fabric=fabric,
             node_profile=np_qfx,
         )
@@ -1279,6 +1271,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
         # Delete Job Template
         self._vnc_lib.job_template_delete(fq_name=job_template.get_fq_name())
+
+        # Delete features, physical and overlay roles and
+        # role definitions
+        self.delete_role_definitions()
+        self.delete_overlay_roles()
+        self.delete_physical_roles()
+        self.delete_features()
+        self.wait_for_features_delete()
 
     # end destroy_base_objects
 
