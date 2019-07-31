@@ -1,6 +1,5 @@
-{# Config based on Routing Instances #}
-{% for ri in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) %}
 {# Config for eBGP endpoints #}
+{% for ri in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) %}
 set groups {{cfg_group}} routing-instances {{ri.name}} instance-type {{ri.routing_instance_type}}
 {%     for lo_intf in ri.get('loopback_interfaces',[]) %}
 set groups {{cfg_group}} routing-instances {{ri.name}} interface {{lo_intf.name}}
@@ -22,8 +21,10 @@ set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp
 {%             endfor %}{# for bgp.get('peers',[]) #}
 {%         endfor %}{# for ri_proto.get('bgp',[]) #}
 {%     endif %}{# if 'bgp' in ri.get('protocols',[]) #}
+{% endfor%}{# for device_abstract_config.get("routing_instances", []) #}
 
 {# Config for advertising 0/0 from SRX to QFX #}
+{% for ri in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) %}
 set groups {{cfg_group}} policy-options policy-statement aggregate_contribute term t1 from protocol direct
 set groups {{cfg_group}} policy-options policy-statement aggregate_contribute term t1 from route-filter 0.0.0.0/0 prefix-length-range /32-/32
 set groups {{cfg_group}} policy-options policy-statement aggregate_contribute term t1 then accept
@@ -38,9 +39,8 @@ set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp
 {%     endif %}{# if 'bgp' in ri.get('protocols',[]) #}
 {% endfor %}{# for device_abstract_config.get("routing_instances", []) #}
 
-{# Config based on Physical Interfaces#}
-{% for pi in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('physical_interfaces', []) %}
 {# Config for adding service VLANs to tenants for service chaining #}
+{% for pi in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('physical_interfaces', []) %}
 {%     if pi.get('interface_type','') == 'service' %}
 {%         for li in pi.get('logical_interfaces', []) %}
 set groups {{cfg_group}} interfaces {{pi.name}} unit {{li.unit}} vlan-id {{li.vlan_tag}}
@@ -48,8 +48,10 @@ set groups {{cfg_group}} interfaces {{pi.name}} unit {{li.unit}} family inet add
 set groups {{cfg_group}} interfaces {{pi.name}} vlan-tagging
 {%         endfor %}{# pi.get('logical_interfaces', []) #}
 {%     endif %}{# pi.get('interface_type','') #}
+{% endfor%}{# device_abstract_config.get('physical_interfaces', []) #}
 
 {# Config for PIM #}
+{% for pi in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('physical_interfaces', []) %}
 {%     if (pi.get('interface_type') == 'loopback') %}
 {%         for li in pi.get('logical_interfaces',[]) %}
 set groups {{cfg_group}} interfaces {{pi.name}} unit {{li.unit}} family {{li.get('family', 'inet')}} address {{li.ip_addresses[0].address}}
