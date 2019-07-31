@@ -142,7 +142,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                     bgp.set_peers(self._get_values_sorted_by_key(peers))
                 protocol.add_bgp(bgp)
 
-            ri.set_protocols(protocol)
+            ri.add_protocols(protocol)
 
     # end build_pnf_svc_ri_config
 
@@ -409,7 +409,7 @@ class PNFSrvcChainingFeature(FeatureBase):
 
     # end build_pnf_svc_config
 
-    def build_svc_chaining_ri_config(self, left_vrf_info, right_vrf_info):
+    def build_svc_chaining_ri_config(self, si_name, left_vrf_info, right_vrf_info):
         # left vrf
         vn_obj = db.VirtualNetworkDM.get(left_vrf_info.get("vn_id"))
         if vn_obj:
@@ -444,7 +444,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                 "loopback_ip"
             ):
                 protocols = RoutingInstanceProtocols()
-                bgp_name = vrf_name + "_left"
+                bgp_name = si_name + "_left"
                 peer_bgp_name = (
                     bgp_name + "_" + left_vrf_info.get("srx_left_interface")
                 )
@@ -465,11 +465,11 @@ class PNFSrvcChainingFeature(FeatureBase):
                 protocols.add_bgp(bgp)
 
                 pimrp = PimRp(ip_address=left_vrf_info.get("loopback_ip"))
-                pim = Pim(name="srx")
+                pim = Pim(name=si_name + "_left")
                 pim.set_rp(pimrp)
                 pim.set_comment("PNF-Service-Chaining")
                 protocols.add_pim(pim)
-                left_ri.set_protocols(protocols)
+                left_ri.add_protocols(protocols)
 
         # create new service chain ri for vni targets
         for vn in left_vrf_info.get("tenant_vn") or []:
@@ -492,10 +492,10 @@ class PNFSrvcChainingFeature(FeatureBase):
                         is_public_network=vn_obj.router_external
                     )
                 vni_ri_left = RoutingInstance(
-                    name=vrf_name + "_service_chain_left"
+                    name=si_name + "_service_chain_left"
                 )
                 self.ri_map_leafspine[
-                    vrf_name + "_service_chain_left"
+                    si_name + "_service_chain_left"
                 ] = vni_ri_left
 
                 vni_ri_left.set_comment("PNF-Service-Chaining")
@@ -544,7 +544,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                 "loopback_ip"
             ):
                 protocols = RoutingInstanceProtocols()
-                bgp_name = vrf_name + "_right"
+                bgp_name = si_name + "_right"
                 peer_bgp_name = (
                     bgp_name + "_" + right_vrf_info.get("srx_right_interface")
                 )
@@ -565,11 +565,11 @@ class PNFSrvcChainingFeature(FeatureBase):
                 protocols.add_bgp(bgp)
 
                 pimrp = PimRp(ip_address=left_vrf_info.get("loopback_ip"))
-                pim = Pim(name="srx")
+                pim = Pim(name=si_name + '_right')
                 pim.set_rp(pimrp)
                 pim.set_comment("PNF-Service-Chaining")
                 protocols.add_pim(pim)
-                right_ri.set_protocols(protocols)
+                right_ri.add_protocols(protocols)
 
         # create new service chain ri for vni targets
         for vn in right_vrf_info.get("tenant_vn") or []:
@@ -593,10 +593,10 @@ class PNFSrvcChainingFeature(FeatureBase):
                     )
 
                 vni_ri_right = RoutingInstance(
-                    name=vrf_name + "_service_chain_right"
+                    name=si_name + "_service_chain_right"
                 )
                 self.ri_map_leafspine[
-                    vrf_name + "_service_chain_right"
+                    si_name + "_service_chain_right"
                 ] = vni_ri_right
 
                 vni_ri_right.set_comment("PNF-Service-Chaining")
@@ -892,7 +892,8 @@ class PNFSrvcChainingFeature(FeatureBase):
                         svc_app_obj, left_right_params
                     )
                     self.build_svc_chaining_ri_config(
-                        left_vrf_info, right_vrf_info
+                        si_obj.name, left_vrf_info,
+                        right_vrf_info
                     )
 
     def feature_config(self, **kwargs):

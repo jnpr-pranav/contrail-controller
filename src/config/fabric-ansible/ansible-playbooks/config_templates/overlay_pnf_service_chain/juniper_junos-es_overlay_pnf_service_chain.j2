@@ -7,8 +7,8 @@ set groups {{cfg_group}} routing-instances {{ri.name}} interface {{lo_intf.name}
 {%     for intf in ri.get('routing_interfaces',[]) %}
 set groups {{cfg_group}} routing-instances {{ri.name}} interface {{intf.name}}
 {%     endfor %}
-{%     if 'bgp' in ri.get('protocols',[]) %}
-{%         for bgp in ri.protocols.bgp %}
+{%     for protocol in ri.get('protocols', []) %}
+{%         for bgp in protocol.get('bgp', []) %}
 set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp.name}} type {{bgp.type_}}
 set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp.name}} local-address {{bgp.ip_address}}
 set groups {{cfg_group}} routing-instances {{ri.name}} routing-options autonomous-system {{bgp.autonomous_system}}
@@ -19,8 +19,8 @@ set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp
 set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp.name}} neighbor {{peer.ip_address}} description "{{peer.comment}}"
 {%                 endif %}{# peer.get('comment','') #}
 {%             endfor %}{# for bgp.get('peers',[]) #}
-{%         endfor %}{# for ri_proto.get('bgp',[]) #}
-{%     endif %}{# if 'bgp' in ri.get('protocols',[]) #}
+{%         endfor %}{# for bgp in proto.get #}
+{%     endfor %}{# for proto in ri.get() #}
 {% endfor%}{# for device_abstract_config.get("routing_instances", []) #}
 
 {# Config for advertising 0/0 from SRX to QFX #}
@@ -32,11 +32,11 @@ set groups {{cfg_group}} policy-options policy-statement aggregate_contribute te
 set groups {{cfg_group}} policy-options policy-statement from_aggregate term AGGR from protocol aggregate
 set groups {{cfg_group}} policy-options policy-statement from_aggregate term AGGR then accept
 set groups {{cfg_group}} routing-instances {{ri.name}} routing-options aggregate route 0.0.0.0/0 policy aggregate_contribute
-{%     if 'bgp' in ri.get('protocols',[]) %}
-{%         for bgp in ri.protocols.bgp %}
+{%     for protocol in ri.get('protocols', []) %}
+{%         for bgp in protocol.get('bgp', []) %}
 set groups {{cfg_group}} routing-instances {{ri.name}} protocols bgp group {{bgp.name}} export from_aggregate
-{%         endfor %}{# for ri_proto.get('bgp') #}
-{%     endif %}{# if 'bgp' in ri.get('protocols',[]) #}
+{%         endfor %}{# for bgp in protocol.get() #}
+{%     endfor %}{# for proto in ri.get() #}
 {% endfor %}{# for device_abstract_config.get("routing_instances", []) #}
 
 {# Config for adding service VLANs to tenants for service chaining #}
@@ -59,8 +59,8 @@ set groups {{cfg_group}} interfaces {{pi.name}} unit {{li.unit}} family {{li.get
 {%     endif %}
 {% endfor %}{# for device_abstract_config.get('physical_interfaces', []) #}
 {% for ri in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) %}
-{%     if 'pim' in ri.get('protocols',[]) %}
-{%         for pim in ri.protocols.pim %}
+{%     for protocol in ri.get('protocols', []) %}
+{%         for pim in protocol.get('pim', []) %}
 set groups {{cfg_group}} policy-options policy-statement from_aggregate term LOOPBACK-FOR-PIM from protocol direct
 set groups {{cfg_group}} policy-options policy-statement from_aggregate term LOOPBACK-FOR-PIM from route-filter 0.0.0.0/0 prefix-length-range /32-/32
 set groups {{cfg_group}} policy-options policy-statement from_aggregate term LOOPBACK-FOR-PIM then accept 
@@ -71,8 +71,8 @@ set groups {{cfg_group}} routing-instances {{ri.name}} protocols pim rp local fa
 set groups {{cfg_group}} routing-instances {{ri.name}} protocols pim interface {{pim_intf.interface.name}} mode sparse
 set groups {{cfg_group}} routing-instances {{ri.name}} protocols pim interface {{pim_intf.interface.name}} version 2
 {%             endfor %}{# pim.get('pim_interfaces',[]) #}
-{%         endfor %}{# if pim #}
-{%     endif %}{# if 'pim' in ri.get('protocols',[]) #}
+{%         endfor %}{# for pim in protocol.get #}
+{%     endfor %}{# for protocol in ri.get('protocols', []) #}
 {% endfor %}{# device_abstract_config.get('physical_interfaces', []) #}
 
 {# Config for security zone and security policy (Allow All) #}
