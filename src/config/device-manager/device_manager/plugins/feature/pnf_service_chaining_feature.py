@@ -25,6 +25,7 @@ class PNFSrvcChainingFeature(FeatureBase):
         self.sc_zone_map = {}
         self.sc_policy_map = {}
         self.vlan_map = {}
+        self.svc_intf_vlans = {"vlan_names": []}
         super(PNFSrvcChainingFeature, self).__init__(
             logger, physical_router, configs
         )
@@ -419,30 +420,26 @@ class PNFSrvcChainingFeature(FeatureBase):
                 vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
             )
 
-            if self.ri_map_leafspine.get(vrf_name):
-                left_ri = self.ri_map_leafspine.get(vrf_name)
-            else:
-                network_id = vn_obj.vn_network_id
-                vxlan_id = vn_obj.get_vxlan_vni()
-                primary_ri = self._get_primary_ri(vn_obj)
-                et, it = self._get_export_import_targets(vn_obj, primary_ri)
-                is_internal_vn = (
-                    True
-                    if "_contrail_lr_internal_vn_" in vn_obj.name
-                    else False
-                )
-                left_ri = RoutingInstance(
-                    name=vrf_name,
-                    virtual_network_mode="l3",
-                    export_targets=et,
-                    import_targets=it,
-                    virtual_network_id=str(network_id),
-                    vxlan_id=str(vxlan_id),
-                    is_public_network=vn_obj.router_external,
-                )
-                left_ri.set_routing_instance_type("vrf")
-                left_ri.set_virtual_network_is_internal(is_internal_vn)
-                self.ri_map_leafspine[vrf_name] = left_ri
+            network_id = vn_obj.vn_network_id
+            vxlan_id = vn_obj.get_vxlan_vni()
+            primary_ri = self._get_primary_ri(vn_obj)
+            et, it = self._get_export_import_targets(vn_obj, primary_ri)
+            is_internal_vn = (
+                True if "_contrail_lr_internal_vn_" in vn_obj.name else False
+            )
+
+            left_ri = RoutingInstance(
+                name=vrf_name,
+                virtual_network_mode="l3",
+                export_targets=et,
+                import_targets=it,
+                virtual_network_id=str(network_id),
+                vxlan_id=str(vxlan_id),
+                is_public_network=vn_obj.router_external,
+            )
+            left_ri.set_routing_instance_type("vrf")
+            left_ri.set_virtual_network_is_internal(is_internal_vn)
+            self.ri_map_leafspine[vrf_name] = left_ri
 
             self._add_ref_to_list(
                 left_ri.get_routing_interfaces(),
@@ -454,6 +451,7 @@ class PNFSrvcChainingFeature(FeatureBase):
             ):
                 protocols = RoutingInstanceProtocols()
                 bgp_name = si_name + "_left"
+
                 peer_bgp_name = (
                     bgp_name + "_" + left_vrf_info.get("srx_left_interface")
                 )
@@ -487,24 +485,21 @@ class PNFSrvcChainingFeature(FeatureBase):
                 vrf_name = DMUtils.make_vrf_name(
                     vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
                 )
-                if self.ri_map_leafspine.get(vrf_name):
-                    ri = self.ri_map_leafspine.get(vrf_name)
-                else:
-                    network_id = vn_obj.vn_network_id
-                    vxlan_id = vn_obj.get_vxlan_vni()
-                    primary_ri = self._get_primary_ri(vn_obj)
-                    et, it = self._get_export_import_targets(
-                        vn_obj, primary_ri
-                    )
-                    ri = RoutingInstance(
-                        name=vrf_name,
-                        virtual_network_mode="l3",
-                        export_targets=et,
-                        import_targets=it,
-                        virtual_network_id=str(network_id),
-                        vxlan_id=str(vxlan_id),
-                        is_public_network=vn_obj.router_external,
-                    )
+
+                network_id = vn_obj.vn_network_id
+                vxlan_id = vn_obj.get_vxlan_vni()
+                primary_ri = self._get_primary_ri(vn_obj)
+                et, it = self._get_export_import_targets(vn_obj, primary_ri)
+
+                ri = RoutingInstance(
+                    name=vrf_name,
+                    virtual_network_mode="l3",
+                    export_targets=et,
+                    import_targets=it,
+                    virtual_network_id=str(network_id),
+                    vxlan_id=str(vxlan_id),
+                    is_public_network=vn_obj.router_external,
+                )
                 vni_ri_left = RoutingInstance(
                     name=si_name + "_service_chain_left"
                 )
@@ -526,31 +521,26 @@ class PNFSrvcChainingFeature(FeatureBase):
                 vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
             )
 
-            if self.ri_map_leafspine.get(vrf_name):
-                right_ri = self.ri_map_leafspine.get(vrf_name)
-            else:
-                network_id = vn_obj.vn_network_id
-                vxlan_id = vn_obj.get_vxlan_vni()
-                primary_ri = self._get_primary_ri(vn_obj)
-                et, it = self._get_export_import_targets(vn_obj, primary_ri)
-                is_internal_vn = (
-                    True
-                    if "_contrail_lr_internal_vn_" in vn_obj.name
-                    else False
-                )
-                right_ri = RoutingInstance(
-                    name=vrf_name,
-                    virtual_network_mode="l3",
-                    export_targets=et,
-                    import_targets=it,
-                    virtual_network_id=str(network_id),
-                    vxlan_id=str(vxlan_id),
-                    is_public_network=vn_obj.router_external,
-                )
-                right_ri.set_routing_instance_type("vrf")
-                right_ri.set_virtual_network_is_internal(is_internal_vn)
+            network_id = vn_obj.vn_network_id
+            vxlan_id = vn_obj.get_vxlan_vni()
+            primary_ri = self._get_primary_ri(vn_obj)
+            et, it = self._get_export_import_targets(vn_obj, primary_ri)
+            is_internal_vn = (
+                True if "_contrail_lr_internal_vn_" in vn_obj.name else False
+            )
+            right_ri = RoutingInstance(
+                name=vrf_name,
+                virtual_network_mode="l3",
+                export_targets=et,
+                import_targets=it,
+                virtual_network_id=str(network_id),
+                vxlan_id=str(vxlan_id),
+                is_public_network=vn_obj.router_external,
+            )
+            right_ri.set_routing_instance_type("vrf")
+            right_ri.set_virtual_network_is_internal(is_internal_vn)
 
-                self.ri_map_leafspine[vrf_name] = right_ri
+            self.ri_map_leafspine[vrf_name] = right_ri
 
             self._add_ref_to_list(
                 right_ri.get_routing_interfaces(),
@@ -562,6 +552,7 @@ class PNFSrvcChainingFeature(FeatureBase):
             ):
                 protocols = RoutingInstanceProtocols()
                 bgp_name = si_name + "_right"
+
                 peer_bgp_name = (
                     bgp_name + "_" + right_vrf_info.get("srx_right_interface")
                 )
@@ -595,24 +586,20 @@ class PNFSrvcChainingFeature(FeatureBase):
                 vrf_name = DMUtils.make_vrf_name(
                     vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
                 )
-                if self.ri_map_leafspine.get(vrf_name):
-                    ri = self.ri_map_leafspine.get(vrf_name)
-                else:
-                    network_id = vn_obj.vn_network_id
-                    vxlan_id = vn_obj.get_vxlan_vni()
-                    primary_ri = self._get_primary_ri(vn_obj)
-                    et, it = self._get_export_import_targets(
-                        vn_obj, primary_ri
-                    )
-                    ri = RoutingInstance(
-                        name=vrf_name,
-                        virtual_network_mode="l3",
-                        export_targets=et,
-                        import_targets=it,
-                        virtual_network_id=str(network_id),
-                        vxlan_id=str(vxlan_id),
-                        is_public_network=vn_obj.router_external,
-                    )
+
+                network_id = vn_obj.vn_network_id
+                vxlan_id = vn_obj.get_vxlan_vni()
+                primary_ri = self._get_primary_ri(vn_obj)
+                et, it = self._get_export_import_targets(vn_obj, primary_ri)
+                ri = RoutingInstance(
+                    name=vrf_name,
+                    virtual_network_mode="l3",
+                    export_targets=et,
+                    import_targets=it,
+                    virtual_network_id=str(network_id),
+                    vxlan_id=str(vxlan_id),
+                    is_public_network=vn_obj.router_external,
+                )
 
                 vni_ri_right = RoutingInstance(
                     name=si_name + "_service_chain_right"
@@ -694,7 +681,14 @@ class PNFSrvcChainingFeature(FeatureBase):
                             )
                             left_svc_intf_unit.set_family("ethernet-switching")
                             vlan_left = Vlan(name="bd-" + left_svc_unit)
-                            left_svc_intf_unit.add_vlans(vlan_left)
+                            if (
+                                vlan_left.get_name()
+                                not in self.svc_intf_vlans["vlan_names"]
+                            ):
+                                left_svc_intf_unit.add_vlans(vlan_left)
+                                self.svc_intf_vlans["vlan_names"].append(
+                                    vlan_left.get_name()
+                                )
 
                 if spine_pi_obj.fq_name == right_fq_name:
                     li_name = spine_pi_obj.name + "." + right_svc_vlan
@@ -746,7 +740,14 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 "ethernet-switching"
                             )
                             vlan_right = Vlan(name="bd-" + right_svc_unit)
-                            right_svc_intf_unit.add_vlans(vlan_right)
+                            if (
+                                vlan_right.get_name()
+                                not in self.svc_intf_vlans["vlan_names"]
+                            ):
+                                right_svc_intf_unit.add_vlans(vlan_right)
+                                self.svc_intf_vlans["vlan_names"].append(
+                                    vlan_right.get_name()
+                                )
 
     # end build_service_chain_irb_bd_config
 
