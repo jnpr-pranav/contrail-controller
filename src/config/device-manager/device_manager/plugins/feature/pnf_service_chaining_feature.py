@@ -4,6 +4,8 @@
 
 """PNF Service Chaining Feature Implementation."""
 
+import collections
+
 from abstract_device_api.abstract_device_xsd import *
 import db
 from dm_utils import DMUtils
@@ -26,6 +28,7 @@ class PNFSrvcChainingFeature(FeatureBase):
         self.sc_policy_map = {}
         self.vlan_map = {}
         self.svc_intf_vlans = {"vlan_names": []}
+        self.ri_protocols_leafspine_map = collections.defaultdict(dict)
         super(PNFSrvcChainingFeature, self).__init__(
             logger, physical_router, configs
         )
@@ -476,7 +479,12 @@ class PNFSrvcChainingFeature(FeatureBase):
                 pim.set_rp(pimrp)
                 pim.set_comment("PNF-Service-Chaining")
                 protocols.add_pim(pim)
-                left_ri.add_protocols(protocols)
+                self.ri_protocols_leafspine_map[vrf_name][bgp_name] = protocols
+                left_ri.set_protocols(
+                    self._get_values_sorted_by_key(
+                        self.ri_protocols_leafspine_map[vrf_name]
+                    )
+                )
 
         # create new service chain ri for vni targets
         for vn in left_vrf_info.get("tenant_vn") or []:
@@ -577,7 +585,12 @@ class PNFSrvcChainingFeature(FeatureBase):
                 pim.set_rp(pimrp)
                 pim.set_comment("PNF-Service-Chaining")
                 protocols.add_pim(pim)
-                right_ri.add_protocols(protocols)
+                self.ri_protocols_leafspine_map[vrf_name][bgp_name] = protocols
+                right_ri.set_protocols(
+                    self._get_values_sorted_by_key(
+                        self.ri_protocols_leafspine_map[vrf_name]
+                    )
+                )
 
         # create new service chain ri for vni targets
         for vn in right_vrf_info.get("tenant_vn") or []:
