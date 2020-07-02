@@ -56,20 +56,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -206,18 +200,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -324,20 +314,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -445,20 +429,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -564,18 +542,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, None)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, None)
 
         # Create Service Objects
         (
@@ -699,20 +673,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         gevent.sleep(1)
 
@@ -805,20 +773,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -960,20 +922,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -1145,20 +1101,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         vmi_2 = self.create_vmi(str(vlan_id_2), vn2)
 
         # Create Left Logical Router
-        llr = LogicalRouter("left_lr" + self.id())
-        llr.set_logical_router_type("vxlan-routing")
-        llr.set_physical_router(qfx)
-        llr.set_virtual_machine_interface(vmi_1)
-        llr_uuid = self._vnc_lib.logical_router_create(llr)
-        llr = self._vnc_lib.logical_router_read(id=llr_uuid)
+        llr = self.create_lr_with_vmi(
+            "left_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_1)
 
         # Create Right Logical Router
-        rlr = LogicalRouter("right_lr" + self.id())
-        rlr.set_logical_router_type("vxlan-routing")
-        rlr.set_physical_router(qfx)
-        rlr.set_virtual_machine_interface(vmi_2)
-        rlr_uuid = self._vnc_lib.logical_router_create(rlr)
-        rlr = self._vnc_lib.logical_router_read(id=rlr_uuid)
+        rlr = self.create_lr_with_vmi(
+            "right_lr" + self.id(), "vxlan-routing",
+            qfx, vmi_2)
 
         # Create Service Objects
         (
@@ -1564,6 +1514,16 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         return vmi
 
     # end create_vmi
+
+    def create_lr_with_vmi(self, name, type, pr, vmi):
+        lr = LogicalRouter(name)
+        lr.set_logical_router_type(type)
+        lr.set_physical_router(pr)
+        if vmi:
+            lr.set_virtual_machine_interface(vmi)
+        lr_uuid = self._vnc_lib.logical_router_create(lr)
+        lr = self._vnc_lib.logical_router_read(id=lr_uuid)
+        return lr
 
     def create_service_appliance_set(self, name):
         sas_obj = ServiceApplianceSet(
