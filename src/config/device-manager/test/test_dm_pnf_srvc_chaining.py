@@ -2,14 +2,30 @@
 # Copyright (c) 2019 Juniper Networks, Inc. All rights reserved.
 #
 import sys
+import logging
 
 from attrdict import AttrDict
 import gevent
 from .test_dm_ansible_common import TestAnsibleCommonDM
 from vnc_api.vnc_api import *
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
+
+    def setUp(self, extra_config_knobs=None):
+        super(TestAnsiblePNFSrvcChainingDM, self).setUp(
+            extra_config_knobs=extra_config_knobs)
+        self.console_handler = logging.StreamHandler()
+        self.console_handler.setLevel(logging.DEBUG)
+        logger.addHandler(self.console_handler)
+
+    def tearDown(self, extra_config_knobs=None):
+        logger.removeHandler(self.console_handler)
+        super(TestAnsiblePNFSrvcChainingDM, self).tearDown()
+
     def test_pnf_roles_availability(self):
         # Create base objects
         (
@@ -1119,29 +1135,10 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             pt_obj,
         ) = self.create_service_objects()
 
-        # Add srx loopback ip to force srx abstract config generation
-        retries = 5
-
-        while retries:
-            srx.set_physical_router_loopback_ip("5.5.0." + str(retries))
-            self._vnc_lib.physical_router_update(srx)
-
-            gevent.sleep(6 - retries)
-            srx_abstract_config = self.check_dm_ansible_config_push()
-
-            srx_device_abstract_config = srx_abstract_config.get(
-                "device_abstract_config")
-
-            # Verify security policies
-            security_policies = srx_device_abstract_config.get(
-                "security_policies")
-
-            if security_policies is None:
-                retries -= 1
-            else:
-                break
-
-            print("Retries Left: " + str(retries))
+        srx_device_abstract_config, security_policies = (
+            self.check_config_with_retry(
+                srx, config_key=["security_policies"])
+        )
 
         self.assertIsNotNone(security_policies)
 
@@ -1525,6 +1522,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         lr = self._vnc_lib.logical_router_read(id=lr_uuid)
         return lr
 
+    # end create_lr_with_vmi
+
     def create_service_appliance_set(self, name):
         sas_obj = ServiceApplianceSet(
             name=name,
@@ -1773,5 +1772,53 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
 
     # end delete_service_objects
 
+    def check_config_with_retry(self, pr, config_key=None, retries=5):
+        '''
+        Checks if your device abstract config has been generated and
+        retries if it is None. Number of retries is defaulted
+        to 5 and can be changed by the 'retries' optional arg.
+
+        Note: This function modifies your physical router's loopback ip
+        to trigger a reaction map update and generate an abstract config.
+
+        config_key, a list of strings, is an optional parameter
+        that can be used to make sure a config portion in a deeper
+        level of the device abstract config has been generated.
+        If this is set, we return a tuple of the DAC and the deepest
+        level config.
+
+        Example usages:
+            dac = check_config_with_retry(qfx, None, retries=2)
+            dac, sec_pol = check_config_with_retry(srx, ["security_policies"])
+            dac, bgp = check_config_with_retry(
+            qfx, ["features", "overlay-bgp", "bgp"])
+        '''
+        while retries:
+            # Set a lo0 ip to generate a config
+            pr.set_physical_router_loopback_ip("5.5.0." + str(retries))
+            self._vnc_lib.physical_router_update(pr)
+
+            gevent.sleep(6 - retries)
+            config = self.check_dm_ansible_config_push()
+
+            dac = config.get("device_abstract_config")
+            config = dac.copy()
+
+            if config_key:
+                for i in range(len(config_key)):
+                    config = config.get(config_key[i])
+
+            if config is None:
+                retries -= 1
+                logger.debug("Could not find " +
+                             config_key[-1] + " in the " +
+                             "abstract config. Will retry")
+                logger.debug("Retries remaining: " + str(retries))
+            else:
+                break
+
+        return dac, config
+
+    # end check_config_with_retry
 
 # end TestAnsiblePNFSrvcChainingDM
