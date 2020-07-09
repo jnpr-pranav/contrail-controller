@@ -91,7 +91,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         ) = self.create_service_objects()
 
         # Change srx's physical role from pnf to spine
-        srx.physical_router_role = "spine"
+        srx.set_physical_router_role("spine")
         self._vnc_lib.physical_router_update(srx)
         gevent.sleep(1)
         srx_abstract_config = self.check_dm_ansible_config_push()
@@ -103,7 +103,7 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         self.assertIsNone(security_policies)
 
         # Adding it back should generate the full service chaining config
-        srx.physical_router_role = "pnf"
+        srx.set_physical_router_role("pnf")
         self._vnc_lib.physical_router_update(srx)
         gevent.sleep(1)
         srx_abstract_config = self.check_dm_ansible_config_push()
@@ -113,8 +113,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         self.assertIsNotNone(security_policies)
 
         # Remove PNF as a rb role from qfx
-        qfx.routing_bridging_roles = RoutingBridgingRolesType(
-            rb_roles=["CRB-MCAST-Gateway"])
+        qfx.set_routing_bridging_roles(RoutingBridgingRolesType(
+            rb_roles=["CRB-MCAST-Gateway"]))
         self._vnc_lib.physical_router_update(qfx)
         gevent.sleep(1)
         qfx_abstract_config = self.check_dm_ansible_config_push()
@@ -126,8 +126,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         self.assertIsNone(vlans)
 
         # Adding the pnf role back should bring it back
-        qfx.routing_bridging_roles = RoutingBridgingRolesType(
-            rb_roles=["CRB-MCAST-Gateway", "PNF-Servicechain"])
+        qfx.set_routing_bridging_roles(RoutingBridgingRolesType(
+            rb_roles=["CRB-MCAST-Gateway", "PNF-Servicechain"]))
         self._vnc_lib.physical_router_update(qfx)
         gevent.sleep(1)
         qfx_abstract_config = self.check_dm_ansible_config_push()
@@ -1788,11 +1788,14 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
         level config.
 
         Example usages:
-            dac = check_config_with_retry(qfx, None, retries=2)
+            dac, _ = check_config_with_retry(qfx, None, retries=2)
             dac, sec_pol = check_config_with_retry(srx, ["security_policies"])
             dac, bgp = check_config_with_retry(
             qfx, ["features", "overlay-bgp", "bgp"])
         '''
+        dac = None
+        config = None
+
         while retries:
             # Set a lo0 ip to generate a config
             pr.set_physical_router_loopback_ip("5.5.0." + str(retries))
@@ -1807,6 +1810,8 @@ class TestAnsiblePNFSrvcChainingDM(TestAnsibleCommonDM):
             if config_key:
                 for i in range(len(config_key)):
                     config = config.get(config_key[i])
+            else:
+                return dac, None
 
             if config is None:
                 retries -= 1
