@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2019 Juniper Networks, Inc. All rights reserved.
 #
-
 """PNF Service Chaining Feature Implementation."""
 
 from collections import defaultdict, OrderedDict
@@ -17,6 +16,7 @@ from .feature_base import FeatureBase
 
 
 class PNFSrvcChainingFeature(FeatureBase):
+
     @classmethod
     def feature_name(cls):
         return "pnf-service-chaining"
@@ -33,9 +33,8 @@ class PNFSrvcChainingFeature(FeatureBase):
         self.vlan_map = None
         self.svc_intf_vlans = None
         self.ri_protocols_leafspine_map = None
-        super(PNFSrvcChainingFeature, self).__init__(
-            logger, physical_router, configs
-        )
+        super(PNFSrvcChainingFeature, self).__init__(logger, physical_router,
+                                                     configs)
 
     # end __init__
 
@@ -61,18 +60,14 @@ class PNFSrvcChainingFeature(FeatureBase):
     # end get_lr_name_from_ri
 
     def check_pnf_svc_required_params(self, svc_params):
-        if (
-            svc_params.get("peer_right_li_ips") and
-            svc_params.get("right_li") and
-            svc_params.get("right_li_ip") and
-            svc_params.get("left_li") and
-            svc_params.get("peer_left_li_ips") and
-            svc_params.get("left_li_ip") and
-            svc_params.get("lo0_li") and
-            svc_params.get("left_peer_asn") and
-            svc_params.get("right_peer_asn") and
-            svc_params.get("lo0_li_ip")
-        ):
+        if (svc_params.get("peer_right_li_ips") and
+                svc_params.get("right_li") and
+                svc_params.get("right_li_ip") and svc_params.get("left_li") and
+                svc_params.get("peer_left_li_ips") and
+                svc_params.get("left_li_ip") and svc_params.get("lo0_li") and
+                svc_params.get("left_peer_asn") and
+                svc_params.get("right_peer_asn") and
+                svc_params.get("lo0_li_ip")):
             return True
         return False
 
@@ -89,25 +84,20 @@ class PNFSrvcChainingFeature(FeatureBase):
             ri.set_routing_instance_type("virtual-router")
             if svc_params.get("lo0_li") and svc_params.get("lo0_li_ip"):
                 ri.add_loopback_interfaces(
-                    LogicalInterface(name=svc_params.get("lo0_li"))
-                )
+                    LogicalInterface(name=svc_params.get("lo0_li")))
                 pimrp = PimRp(ip_address=svc_params.get("lo0_li_ip"))
                 pim.set_rp(pimrp)
             if svc_params.get("left_li"):
                 ri.add_routing_interfaces(
-                    LogicalInterface(name=svc_params.get("left_li"))
-                )
+                    LogicalInterface(name=svc_params.get("left_li")))
                 pim_intf = PimInterface(
-                    LogicalInterface(name=svc_params.get("left_li"))
-                )
+                    LogicalInterface(name=svc_params.get("left_li")))
                 pim.add_pim_interfaces(pim_intf)
             if svc_params.get("right_li"):
                 ri.add_routing_interfaces(
-                    LogicalInterface(name=svc_params.get("right_li"))
-                )
+                    LogicalInterface(name=svc_params.get("right_li")))
                 pim_intf = PimInterface(
-                    LogicalInterface(name=svc_params.get("right_li"))
-                )
+                    LogicalInterface(name=svc_params.get("right_li")))
                 pim.add_pim_interfaces(pim_intf)
 
             protocol.add_pim(pim)
@@ -165,12 +155,10 @@ class PNFSrvcChainingFeature(FeatureBase):
         if svc_params.get("lo0_li") and svc_params.get("lo0_li_ip"):
             lo0_intf = svc_params.get("lo0_li")
             ip = svc_params.get("lo0_li_ip")
-            intf, li_map = self._add_or_lookup_pi(
-                self.pi_map, "lo0", "loopback"
-            )
-            intf_unit = self._add_or_lookup_li(
-                li_map, lo0_intf, lo0_intf.split(".")[1]
-            )
+            intf, li_map = self._add_or_lookup_pi(self.pi_map, "lo0",
+                                                  "loopback")
+            intf_unit = self._add_or_lookup_li(li_map, lo0_intf,
+                                               lo0_intf.split(".")[1])
             intf_unit.set_comment("PNF loopback interface")
             intf_unit.set_vlan_tag(lo0_intf.split(".")[1])
             self._add_ip_address(intf_unit, ip)
@@ -179,12 +167,11 @@ class PNFSrvcChainingFeature(FeatureBase):
         if svc_params.get("left_li") and svc_params.get("left_li_ip"):
             left_intf = svc_params.get("left_li")
             ip = svc_params.get("left_li_ip")
-            intf, li_map = self._add_or_lookup_pi(
-                self.pi_map, left_intf.split(".")[0], "service"
-            )
-            intf_unit = self._add_or_lookup_li(
-                li_map, left_intf, left_intf.split(".")[1]
-            )
+            intf, li_map = self._add_or_lookup_pi(self.pi_map,
+                                                  left_intf.split(".")[0],
+                                                  "service")
+            intf_unit = self._add_or_lookup_li(li_map, left_intf,
+                                               left_intf.split(".")[1])
             intf_unit.set_comment("PNF left svc interface")
             intf_unit.set_vlan_tag(left_intf.split(".")[1])
             self._add_ip_address(intf_unit, ip)
@@ -193,12 +180,11 @@ class PNFSrvcChainingFeature(FeatureBase):
         if svc_params.get("right_li") and svc_params.get("right_li_ip"):
             right_intf = svc_params.get("right_li")
             ip = svc_params.get("right_li_ip")
-            intf, li_map = self._add_or_lookup_pi(
-                self.pi_map, right_intf.split(".")[0], "service"
-            )
-            intf_unit = self._add_or_lookup_li(
-                li_map, right_intf, right_intf.split(".")[1]
-            )
+            intf, li_map = self._add_or_lookup_pi(self.pi_map,
+                                                  right_intf.split(".")[0],
+                                                  "service")
+            intf_unit = self._add_or_lookup_li(li_map, right_intf,
+                                               right_intf.split(".")[1])
             intf_unit.set_comment("PNF right svc interface")
             intf_unit.set_vlan_tag(right_intf.split(".")[1])
             self._add_ip_address(intf_unit, ip)
@@ -213,21 +199,17 @@ class PNFSrvcChainingFeature(FeatureBase):
             self.sc_zone_map[left_sec_zone] = left_sc
             if svc_params.get("left_li"):
                 left_sc.add_interfaces(
-                    LogicalInterface(name=svc_params.get("left_li"))
-                )
+                    LogicalInterface(name=svc_params.get("left_li")))
             right_sc = SecurityZone(name=right_sec_zone)
             self.sc_zone_map[right_sec_zone] = right_sc
             if svc_params.get("right_li"):
                 right_sc.add_interfaces(
-                    LogicalInterface(name=svc_params.get("right_li"))
-                )
-            sc_policy = SecurityPolicy(
-                from_zone=left_sec_zone, to_zone=right_sec_zone
-            )
+                    LogicalInterface(name=svc_params.get("right_li")))
+            sc_policy = SecurityPolicy(from_zone=left_sec_zone,
+                                       to_zone=right_sec_zone)
             self.sc_policy_map[left_sec_zone] = sc_policy
-            sc_policy = SecurityPolicy(
-                from_zone=right_sec_zone, to_zone=left_sec_zone
-            )
+            sc_policy = SecurityPolicy(from_zone=right_sec_zone,
+                                       to_zone=left_sec_zone)
             self.sc_policy_map[right_sec_zone] = sc_policy
 
     # end build_pnf_svc_sc_zone_policy_config
@@ -253,186 +235,148 @@ class PNFSrvcChainingFeature(FeatureBase):
                     if sa_obj:
                         right_li_name = left_li_name = lo0_li_name = None
                         right_li_ip = left_li_ip = lo0_li_ip = None
-                        for pi, intf_type in list((
-                                sa_obj.physical_interfaces).items()):
+                        for pi, intf_type in list(
+                                (sa_obj.physical_interfaces).items()):
                             pi_obj = PhysicalInterfaceDM.get(pi)
                             attr = intf_type.get("interface_type")
                             if attr == "left":
-                                left_li_name = (
-                                    pi_obj.name +
-                                    "." +
-                                    str(svc_params["left_vlan"])
-                                )
+                                left_li_name = (pi_obj.name + "." +
+                                                str(svc_params["left_vlan"]))
                                 left_li_fq_name = pi_obj.fq_name + [
                                     left_li_name.replace(":", "_")
                                 ]
                                 left_li_obj = (
-                                    LogicalInterfaceDM
-                                    .find_by_fq_name(left_li_fq_name)
-                                )
+                                    LogicalInterfaceDM.find_by_fq_name(
+                                        left_li_fq_name))
                                 if left_li_obj:
                                     instance_ip = InstanceIpDM.get(
-                                        left_li_obj.instance_ip
-                                    )
+                                        left_li_obj.instance_ip)
                                     if instance_ip:
                                         left_li_ip = (
-                                            instance_ip.instance_ip_address
-                                        )
+                                            instance_ip.instance_ip_address)
                                         svc_params["left_li"] = left_li_name
                                         svc_params["left_li_ip"] = left_li_ip
-                                lo0_li_name = (
-                                    "lo0" + "." + str(svc_params["left_vlan"])
-                                )
+                                lo0_li_name = ("lo0" + "." +
+                                               str(svc_params["left_vlan"]))
                                 lo0_fq_name = pr.fq_name + ["lo0", lo0_li_name]
-                                lo0_li_obj = (
-                                    LogicalInterfaceDM
-                                    .find_by_fq_name(lo0_fq_name)
-                                )
+                                lo0_li_obj = (LogicalInterfaceDM.
+                                              find_by_fq_name(lo0_fq_name))
 
                                 if lo0_li_obj:
                                     instance_ip = InstanceIpDM.get(
-                                        lo0_li_obj.instance_ip
-                                    )
+                                        lo0_li_obj.instance_ip)
                                     if instance_ip:
                                         lo0_li_ip = (
-                                            instance_ip.instance_ip_address
-                                        )
+                                            instance_ip.instance_ip_address)
                                         svc_params["lo0_li"] = lo0_li_name
                                         svc_params["lo0_li_ip"] = lo0_li_ip
                                 peer_left_intfs_ip = []
                                 for pi_ref in pi_obj.physical_interfaces or []:
                                     pi_ref_obj = PhysicalInterfaceDM.get(
-                                        pi_ref
-                                    )
+                                        pi_ref)
                                     svc_params[
-                                        "left_peer_asn"
-                                    ] = self.get_peer_asn(pi_ref_obj)
+                                        "left_peer_asn"] = self.get_peer_asn(
+                                            pi_ref_obj)
 
                                     peer_li_name = (
-                                        pi_ref_obj.name +
-                                        "." +
-                                        str(svc_params["left_vlan"])
-                                    )
+                                        pi_ref_obj.name + "." +
+                                        str(svc_params["left_vlan"]))
 
                                     peer_li_fq_name = pi_ref_obj.fq_name + [
                                         peer_li_name.replace(":", "_")
                                     ]
 
                                     peer_li_obj = (
-                                        LogicalInterfaceDM
-                                        .find_by_fq_name(peer_li_fq_name)
-                                    )
+                                        LogicalInterfaceDM.find_by_fq_name(
+                                            peer_li_fq_name))
 
                                     if peer_li_obj:
                                         instance_ip = InstanceIpDM.get(
-                                            peer_li_obj.instance_ip
-                                        )
+                                            peer_li_obj.instance_ip)
                                         if instance_ip:
-                                            peer_li_ip = (
-                                                instance_ip.instance_ip_address
-                                            )
+                                            peer_li_ip = (instance_ip.
+                                                          instance_ip_address)
                                             peer_left_intfs_ip.append(
-                                                peer_li_ip
-                                            )
+                                                peer_li_ip)
                                 svc_params[
-                                    "peer_left_li_ips"
-                                ] = peer_left_intfs_ip
+                                    "peer_left_li_ips"] = peer_left_intfs_ip
                             elif attr == "right":
 
-                                right_li_name = (
-                                    pi_obj.name +
-                                    "." +
-                                    str(svc_params["right_vlan"])
-                                )
+                                right_li_name = (pi_obj.name + "." +
+                                                 str(svc_params["right_vlan"]))
 
                                 right_li_fq_name = pi_obj.fq_name + [
                                     right_li_name.replace(":", "_")
                                 ]
 
                                 right_li_obj = (
-                                    LogicalInterfaceDM
-                                    .find_by_fq_name(right_li_fq_name)
-                                )
+                                    LogicalInterfaceDM.find_by_fq_name(
+                                        right_li_fq_name))
 
                                 if right_li_obj:
                                     instance_ip = InstanceIpDM.get(
-                                        right_li_obj.instance_ip
-                                    )
+                                        right_li_obj.instance_ip)
                                     if instance_ip:
                                         right_li_ip = (
-                                            instance_ip.instance_ip_address
-                                        )
+                                            instance_ip.instance_ip_address)
                                         svc_params["right_li"] = right_li_name
                                         svc_params["right_li_ip"] = right_li_ip
                                 peer_right_intfs_ip = []
                                 for pi_ref in pi_obj.physical_interfaces or []:
                                     pi_ref_obj = PhysicalInterfaceDM.get(
-                                        pi_ref
-                                    )
+                                        pi_ref)
                                     svc_params[
-                                        "right_peer_asn"
-                                    ] = self.get_peer_asn(pi_ref_obj)
+                                        "right_peer_asn"] = self.get_peer_asn(
+                                            pi_ref_obj)
 
                                     peer_li_name = (
-                                        pi_ref_obj.name +
-                                        "." +
-                                        str(svc_params["right_vlan"])
-                                    )
+                                        pi_ref_obj.name + "." +
+                                        str(svc_params["right_vlan"]))
 
                                     peer_li_fq_name = pi_ref_obj.fq_name + [
                                         peer_li_name.replace(":", "_")
                                     ]
 
                                     peer_li_obj = (
-                                        LogicalInterfaceDM
-                                        .find_by_fq_name(peer_li_fq_name)
-                                    )
+                                        LogicalInterfaceDM.find_by_fq_name(
+                                            peer_li_fq_name))
 
                                     if peer_li_obj:
                                         instance_ip = InstanceIpDM.get(
-                                            peer_li_obj.instance_ip
-                                        )
+                                            peer_li_obj.instance_ip)
                                         if instance_ip:
-                                            peer_li_ip = (
-                                                instance_ip.instance_ip_address
-                                            )
+                                            peer_li_ip = (instance_ip.
+                                                          instance_ip_address)
                                             peer_right_intfs_ip.append(
-                                                peer_li_ip
-                                            )
+                                                peer_li_ip)
                                 svc_params[
-                                    "peer_right_li_ips"
-                                ] = peer_right_intfs_ip
-                        self._logger.debug(
-                            "PR: %s svc params: %s" % (pr.name, svc_params)
-                        )
+                                    "peer_right_li_ips"] = peer_right_intfs_ip
+                        self._logger.debug("PR: %s svc params: %s" %
+                                           (pr.name, svc_params))
                         # Make sure all required parameters are present,
                         # before creating the abstract config
                         if self.check_pnf_svc_required_params(svc_params):
                             self.build_pnf_svc_ri_config(svc_params)
                             self.build_pnf_svc_intfs_config(svc_params)
                             self.build_pnf_svc_sc_zone_policy_config(
-                                svc_params
-                            )
+                                svc_params)
 
     # end build_pnf_svc_config
 
-    def build_svc_chaining_ri_config(
-        self, si_name, left_vrf_info, right_vrf_info
-    ):
+    def build_svc_chaining_ri_config(self, si_name, left_vrf_info,
+                                     right_vrf_info):
         # left vrf
         vn_obj = VirtualNetworkDM.get(left_vrf_info.get("vn_id"))
         if vn_obj:
-            vrf_name = DMUtils.make_vrf_name(
-                vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
-            )
+            vrf_name = DMUtils.make_vrf_name(vn_obj.fq_name[-1],
+                                             vn_obj.vn_network_id, "l3")
 
             network_id = vn_obj.vn_network_id
             vxlan_id = vn_obj.get_vxlan_vni()
             primary_ri = self._get_primary_ri(vn_obj)
             et, it = self._get_export_import_targets(vn_obj, primary_ri)
-            is_internal_vn = (
-                True if "_contrail_lr_internal_vn_" in vn_obj.name else False
-            )
+            is_internal_vn = (True if "_contrail_lr_internal_vn_"
+                              in vn_obj.name else False)
 
             left_ri = RoutingInstance(
                 name=vrf_name,
@@ -448,9 +392,8 @@ class PNFSrvcChainingFeature(FeatureBase):
             if is_internal_vn:
                 lr = self.get_lr_name_from_ri(vrf_name)
                 if lr:
-                    left_ri.set_description(
-                        "__contrail_%s_%s" % (lr.name, lr.uuid)
-                    )
+                    left_ri.set_description("__contrail_%s_%s" %
+                                            (lr.name, lr.uuid))
 
             self.ri_map_leafspine[vrf_name] = left_ri
 
@@ -460,14 +403,12 @@ class PNFSrvcChainingFeature(FeatureBase):
             )
 
             if left_vrf_info.get("srx_left_interface") and left_vrf_info.get(
-                "loopback_ip"
-            ):
+                    "loopback_ip"):
                 protocols = RoutingInstanceProtocols()
                 bgp_name = si_name + "_left"
 
-                peer_bgp_name = (
-                    bgp_name + "_" + left_vrf_info.get("srx_left_interface")
-                )
+                peer_bgp_name = (bgp_name + "_" +
+                                 left_vrf_info.get("srx_left_interface"))
 
                 peer_bgp = Bgp(
                     name=peer_bgp_name,
@@ -492,17 +433,14 @@ class PNFSrvcChainingFeature(FeatureBase):
                 self.ri_protocols_leafspine_map[vrf_name][bgp_name] = protocols
                 left_ri.set_protocols(
                     self._get_values_sorted_by_key(
-                        self.ri_protocols_leafspine_map[vrf_name]
-                    )
-                )
+                        self.ri_protocols_leafspine_map[vrf_name]))
 
         # create new service chain ri for vni targets
         for vn in left_vrf_info.get("tenant_vn") or []:
             vn_obj = VirtualNetworkDM.get(vn)
             if vn_obj:
-                vrf_name = DMUtils.make_vrf_name(
-                    vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
-                )
+                vrf_name = DMUtils.make_vrf_name(vn_obj.fq_name[-1],
+                                                 vn_obj.vn_network_id, "l3")
 
                 network_id = vn_obj.vn_network_id
                 vxlan_id = vn_obj.get_vxlan_vni()
@@ -518,12 +456,10 @@ class PNFSrvcChainingFeature(FeatureBase):
                     vxlan_id=str(vxlan_id),
                     is_public_network=vn_obj.router_external,
                 )
-                vni_ri_left = RoutingInstance(
-                    name=si_name + "_service_chain_left"
-                )
-                self.ri_map_leafspine[
-                    si_name + "_service_chain_left"
-                ] = vni_ri_left
+                vni_ri_left = RoutingInstance(name=si_name +
+                                              "_service_chain_left")
+                self.ri_map_leafspine[si_name +
+                                      "_service_chain_left"] = vni_ri_left
 
                 vni_ri_left.set_comment("PNF-Service-Chaining")
                 vni_ri_left.set_routing_instance_type("virtual-switch")
@@ -535,17 +471,15 @@ class PNFSrvcChainingFeature(FeatureBase):
         # right vrf
         vn_obj = VirtualNetworkDM.get(right_vrf_info.get("vn_id"))
         if vn_obj:
-            vrf_name = DMUtils.make_vrf_name(
-                vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
-            )
+            vrf_name = DMUtils.make_vrf_name(vn_obj.fq_name[-1],
+                                             vn_obj.vn_network_id, "l3")
 
             network_id = vn_obj.vn_network_id
             vxlan_id = vn_obj.get_vxlan_vni()
             primary_ri = self._get_primary_ri(vn_obj)
             et, it = self._get_export_import_targets(vn_obj, primary_ri)
-            is_internal_vn = (
-                True if "_contrail_lr_internal_vn_" in vn_obj.name else False
-            )
+            is_internal_vn = (True if "_contrail_lr_internal_vn_"
+                              in vn_obj.name else False)
             right_ri = RoutingInstance(
                 name=vrf_name,
                 virtual_network_mode="l3",
@@ -560,9 +494,8 @@ class PNFSrvcChainingFeature(FeatureBase):
             if is_internal_vn:
                 lr = self.get_lr_name_from_ri(vrf_name)
                 if lr:
-                    right_ri.set_description(
-                        "__contrail_%s_%s" % (lr.name, lr.uuid)
-                    )
+                    right_ri.set_description("__contrail_%s_%s" %
+                                             (lr.name, lr.uuid))
 
             self.ri_map_leafspine[vrf_name] = right_ri
 
@@ -572,14 +505,12 @@ class PNFSrvcChainingFeature(FeatureBase):
             )
 
             if right_vrf_info.get("srx_right_interface") and left_vrf_info.get(
-                "loopback_ip"
-            ):
+                    "loopback_ip"):
                 protocols = RoutingInstanceProtocols()
                 bgp_name = si_name + "_right"
 
-                peer_bgp_name = (
-                    bgp_name + "_" + right_vrf_info.get("srx_right_interface")
-                )
+                peer_bgp_name = (bgp_name + "_" +
+                                 right_vrf_info.get("srx_right_interface"))
 
                 peer_bgp = Bgp(
                     name=peer_bgp_name,
@@ -604,17 +535,14 @@ class PNFSrvcChainingFeature(FeatureBase):
                 self.ri_protocols_leafspine_map[vrf_name][bgp_name] = protocols
                 right_ri.set_protocols(
                     self._get_values_sorted_by_key(
-                        self.ri_protocols_leafspine_map[vrf_name]
-                    )
-                )
+                        self.ri_protocols_leafspine_map[vrf_name]))
 
         # create new service chain ri for vni targets
         for vn in right_vrf_info.get("tenant_vn") or []:
             vn_obj = VirtualNetworkDM.get(vn)
             if vn_obj:
-                vrf_name = DMUtils.make_vrf_name(
-                    vn_obj.fq_name[-1], vn_obj.vn_network_id, "l3"
-                )
+                vrf_name = DMUtils.make_vrf_name(vn_obj.fq_name[-1],
+                                                 vn_obj.vn_network_id, "l3")
 
                 network_id = vn_obj.vn_network_id
                 vxlan_id = vn_obj.get_vxlan_vni()
@@ -630,21 +558,18 @@ class PNFSrvcChainingFeature(FeatureBase):
                     is_public_network=vn_obj.router_external,
                 )
 
-                vni_ri_right = RoutingInstance(
-                    name=si_name + "_service_chain_right"
-                )
-                self.ri_map_leafspine[
-                    si_name + "_service_chain_right"
-                ] = vni_ri_right
+                vni_ri_right = RoutingInstance(name=si_name +
+                                               "_service_chain_right")
+                self.ri_map_leafspine[si_name +
+                                      "_service_chain_right"] = vni_ri_right
 
                 vni_ri_right.set_comment("PNF-Service-Chaining")
                 vni_ri_right.set_routing_instance_type("virtual-switch")
                 vni_ri_right.set_vxlan_id(right_vrf_info.get("right_svc_unit"))
 
                 for target in ri.get_export_targets():
-                    self._add_to_list(
-                        vni_ri_right.get_export_targets(), target
-                    )
+                    self._add_to_list(vni_ri_right.get_export_targets(),
+                                      target)
 
     # end build_service_chain_ri_config
 
@@ -675,11 +600,9 @@ class PNFSrvcChainingFeature(FeatureBase):
                             irb_addr = iip_obj.instance_ip_address
                             irb_unit = left_svc_unit
                             left_irb_intf, li_map = self._add_or_lookup_pi(
-                                self.pi_map_leafspine, "irb", "irb"
-                            )
+                                self.pi_map_leafspine, "irb", "irb")
                             intf_unit = self._add_or_lookup_li(
-                                li_map, "irb." + str(irb_unit), irb_unit
-                            )
+                                li_map, "irb." + str(irb_unit), irb_unit)
                             intf_unit.set_comment("PNF-Service-Chaining")
                             self._add_ip_address(intf_unit, irb_addr + "/29")
                             # build BD config
@@ -696,8 +619,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 "irb." + str(irb_unit),
                             )
                             self.vlan_map[
-                                left_bd_vlan.get_name()
-                            ] = left_bd_vlan
+                                left_bd_vlan.get_name()] = left_bd_vlan
                             # create logical interfaces for the aggregated
                             # interfaces
                             left_svc_intf, li_map = self._add_or_lookup_pi(
@@ -706,21 +628,16 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 "service",
                             )
                             left_svc_intf_unit = self._add_or_lookup_li(
-                                li_map, left_fq_name[-1] + ".0", "0"
-                            )
+                                li_map, left_fq_name[-1] + ".0", "0")
                             left_svc_intf_unit.set_comment(
-                                "PNF-Service-Chaining"
-                            )
+                                "PNF-Service-Chaining")
                             left_svc_intf_unit.set_family("ethernet-switching")
                             vlan_left = Vlan(name="bd-" + left_svc_unit)
-                            if (
-                                vlan_left.get_name()
-                                not in self.svc_intf_vlans["vlan_names"]
-                            ):
+                            if (vlan_left.get_name()
+                                    not in self.svc_intf_vlans["vlan_names"]):
                                 left_svc_intf_unit.add_vlans(vlan_left)
                                 self.svc_intf_vlans["vlan_names"].append(
-                                    vlan_left.get_name()
-                                )
+                                    vlan_left.get_name())
 
                 if spine_pi_obj.fq_name == right_fq_name:
                     li_name = spine_pi_obj.name + "." + right_svc_vlan
@@ -735,11 +652,9 @@ class PNFSrvcChainingFeature(FeatureBase):
                             irb_addr = iip_obj.instance_ip_address
                             irb_unit = right_svc_unit
                             right_irb_intf, li_map = self._add_or_lookup_pi(
-                                self.pi_map_leafspine, "irb", "irb"
-                            )
+                                self.pi_map_leafspine, "irb", "irb")
                             intf_unit = self._add_or_lookup_li(
-                                li_map, "irb." + str(irb_unit), irb_unit
-                            )
+                                li_map, "irb." + str(irb_unit), irb_unit)
                             intf_unit.set_comment("PNF-Service-Chaining")
                             self._add_ip_address(intf_unit, irb_addr + "/29")
                             # build BD config
@@ -756,8 +671,7 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 "irb." + str(irb_unit),
                             )
                             self.vlan_map[
-                                right_bd_vlan.get_name()
-                            ] = right_bd_vlan
+                                right_bd_vlan.get_name()] = right_bd_vlan
                             # create logical interfaces for the aggregated
                             # interfaces
                             right_svc_intf, li_map = self._add_or_lookup_pi(
@@ -766,32 +680,24 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 "service",
                             )
                             right_svc_intf_unit = self._add_or_lookup_li(
-                                li_map, right_fq_name[-1] + ".0", "0"
-                            )
+                                li_map, right_fq_name[-1] + ".0", "0")
                             right_svc_intf_unit.set_comment(
-                                "PNF-Service-Chaining"
-                            )
+                                "PNF-Service-Chaining")
                             right_svc_intf_unit.set_family(
-                                "ethernet-switching"
-                            )
+                                "ethernet-switching")
                             vlan_right = Vlan(name="bd-" + right_svc_unit)
-                            if (
-                                vlan_right.get_name()
-                                not in self.svc_intf_vlans["vlan_names"]
-                            ):
+                            if (vlan_right.get_name()
+                                    not in self.svc_intf_vlans["vlan_names"]):
                                 right_svc_intf_unit.add_vlans(vlan_right)
                                 self.svc_intf_vlans["vlan_names"].append(
-                                    vlan_right.get_name()
-                                )
+                                    vlan_right.get_name())
 
     # end build_service_chain_irb_bd_config
 
-    def check_svc_chaining_required_params(
-        self, left_vrf_info, right_vrf_info
-    ):
+    def check_svc_chaining_required_params(self, left_vrf_info,
+                                           right_vrf_info):
         if left_vrf_info.get("left_svc_unit") and right_vrf_info.get(
-            "right_svc_unit"
-        ):
+                "right_svc_unit"):
             return True
 
         return False
@@ -844,25 +750,19 @@ class PNFSrvcChainingFeature(FeatureBase):
                     if pt_obj.left_lr == lr_uuid:
                         left_vrf_info["vn_id"] = lr_obj.virtual_network
                         left_vrf_info[
-                            "tenant_vn"
-                        ] = lr_obj.get_connected_networks(
-                            include_internal=False, pr_uuid=pr.uuid
-                        )
+                            "tenant_vn"] = lr_obj.get_connected_networks(
+                                include_internal=False, pr_uuid=pr.uuid)
                     if pt_obj.right_lr == lr_uuid:
                         right_vrf_info["vn_id"] = lr_obj.virtual_network
                         right_vrf_info[
-                            "tenant_vn"
-                        ] = lr_obj.get_connected_networks(
-                            include_internal=False, pr_uuid=pr.uuid
-                        )
+                            "tenant_vn"] = lr_obj.get_connected_networks(
+                                include_internal=False, pr_uuid=pr.uuid)
 
                 st_obj = ServiceTemplateDM.get(si_obj.service_template)
                 sas_obj = ServiceApplianceSetDM.get(
-                    st_obj.service_appliance_set
-                )
+                    st_obj.service_appliance_set)
                 svc_app_obj = ServiceApplianceDM.get(
-                    list(sas_obj.service_appliances)[0]
-                )
+                    list(sas_obj.service_appliances)[0])
 
                 # get the left and right interfaces
                 for kvp in svc_app_obj.kvpairs or []:
@@ -897,12 +797,11 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 vlan = li_obj.fq_name[-1].split(".")[-1]
                                 if left_svc_vlan == vlan:
                                     instance_ip = InstanceIpDM.get(
-                                        li_obj.instance_ip
-                                    )
+                                        li_obj.instance_ip)
                                     if instance_ip:
-                                        left_vrf_info[
+                                        left_vrf_info[(
                                             "srx_left_interface"
-                                        ] = instance_ip.instance_ip_address
+                                        )] = instance_ip.instance_ip_address
                     if intf_type.get("interface_type") == "right":
                         pnf_pi_obj = PhysicalInterfaceDM(pnf_pi)
                         for li in pnf_pi_obj.logical_interfaces:
@@ -911,12 +810,11 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 vlan = li_obj.fq_name[-1].split(".")[-1]
                                 if right_svc_vlan == vlan:
                                     instance_ip = InstanceIpDM.get(
-                                        li_obj.instance_ip
-                                    )
+                                        li_obj.instance_ip)
                                     if instance_ip:
-                                        right_vrf_info[
+                                        right_vrf_info[(
                                             "srx_right_interface"
-                                        ] = instance_ip.instance_ip_address
+                                        )] = instance_ip.instance_ip_address
 
                 if si_obj.rp_ip_addr:
                     # get rendezvous point IP addr from SI object, passed as
@@ -934,20 +832,17 @@ class PNFSrvcChainingFeature(FeatureBase):
                                 left_vrf_info['loopback_ip'] = \
                                     instance_ip.instance_ip_address
                 self._logger.debug(
-                    "PR: %s left_vrf_info: %s right_vrf_info: %s "
-                    % (pr.name, left_vrf_info, right_vrf_info)
-                )
+                    "PR: %s left_vrf_info: %s right_vrf_info: %s " %
+                    (pr.name, left_vrf_info, right_vrf_info))
                 # Make sure all required parameters are present before
                 # creating the abstract config
                 if self.check_svc_chaining_required_params(
-                    left_vrf_info, right_vrf_info
-                ):
+                        left_vrf_info, right_vrf_info):
                     self.build_svc_chaining_irb_bd_config(
-                        svc_app_obj, left_right_params
-                    )
-                    self.build_svc_chaining_ri_config(
-                        si_obj.name, left_vrf_info, right_vrf_info
-                    )
+                        svc_app_obj, left_right_params)
+                    self.build_svc_chaining_ri_config(si_obj.name,
+                                                      left_vrf_info,
+                                                      right_vrf_info)
 
     def feature_config(self, **kwargs):
         pr = self._physical_router
@@ -974,16 +869,13 @@ class PNFSrvcChainingFeature(FeatureBase):
                 feature_config.add_physical_interfaces(pi)
 
             feature_config.set_routing_instances(
-                self._get_values_sorted_by_key(self.ri_map)
-            )
+                self._get_values_sorted_by_key(self.ri_map))
 
             feature_config.set_security_zones(
-                self._get_values_sorted_by_key(self.sc_zone_map)
-            )
+                self._get_values_sorted_by_key(self.sc_zone_map))
 
             feature_config.set_security_policies(
-                self._get_values_sorted_by_key(self.sc_policy_map)
-            )
+                self._get_values_sorted_by_key(self.sc_policy_map))
 
             return feature_config
 
@@ -995,12 +887,10 @@ class PNFSrvcChainingFeature(FeatureBase):
                 feature_config.add_physical_interfaces(pi)
 
             feature_config.set_vlans(
-                self._get_values_sorted_by_key(self.vlan_map)
-            )
+                self._get_values_sorted_by_key(self.vlan_map))
 
             feature_config.set_routing_instances(
-                self._get_values_sorted_by_key(self.ri_map_leafspine)
-            )
+                self._get_values_sorted_by_key(self.ri_map_leafspine))
 
             return feature_config
 
