@@ -2,21 +2,21 @@
 {% for ri in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) %}
 {%     set ns = namespace(name='') %}
 {%     if ri.get('description', '') %}
-{%         set ns.name = ri.get('description') %}
+{%         set ns.name = ri.get('description')[:127] %}
 {%     else %}
 {%         set ns.name = ri.get('name') %}
 {%     endif %}
 {%     for protocol in ri.get('protocols', []) %}
 {%         for bgp in protocol.get('bgp', []) %}
-{%             set sys_config = device_abstract_config.get('system', None) %}
-{%             set sys_roles = sys_config.get('routing_bridging_roles', []) %}
-{%             if 'PNF-Servicechain' in sys_roles %}
-set groups {{cfg_group}} routing-instances {{ns.name}} protocols evpn ip-prefix-routes export PL-ITR-DEFAULT
-set groups {{cfg_group}} policy-options policy-statement PL-ITR-DEFAULT term DEFAULT-ITR1 from protocol bgp
-set groups {{cfg_group}} policy-options policy-statement PL-ITR-DEFAULT term DEFAULT-ITR1 from route-filter 0.0.0.0/0 exact
-set groups {{cfg_group}} policy-options policy-statement PL-ITR-DEFAULT term DEFAULT-ITR1 then accept
-set groups {{cfg_group}} policy-options policy-statement PL-ITR-DEFAULT then reject
-{%             endif %}
+{%             if 'PNF-Service-Chaining' in bgp.get('comment','') %}
+{%                 set sys_config = device_abstract_config.get('system', None) %}
+{%                 set sys_roles = sys_config.get('routing_bridging_roles', []) %}
+{%                 if 'PNF-Servicechain' in sys_roles %}
+set groups {{cfg_group}} routing-instances {{ns.name}} protocols evpn ip-prefix-routes export BGP_ROUTES
+set groups {{cfg_group}} policy-options policy-statement BGP_ROUTES term DEFAULT_BGP from protocol bgp
+set groups {{cfg_group}} policy-options policy-statement BGP_ROUTES term DEFAULT_BGP then accept
+{%                 endif %}
+set groups {{cfg_group}} routing-instances {{ns.name}} protocols bgp multipath
 set groups {{cfg_group}} routing-instances {{ns.name}} protocols bgp group {{bgp.name}} type {{bgp.type_}}
 set groups {{cfg_group}} routing-instances {{ns.name}} protocols bgp group {{bgp.name}} export {{bgp.name}}-export
 {%                 for peer in bgp.peers %}
@@ -25,16 +25,21 @@ set groups {{cfg_group}} routing-instances {{ns.name}} protocols bgp group {{bgp
 {%                 endfor %}
 set groups {{cfg_group}} policy-options policy-statement {{bgp.name}}-export term DIRECT from protocol direct
 set groups {{cfg_group}} policy-options policy-statement {{bgp.name}}-export term DIRECT then accept
+set groups {{cfg_group}} policy-options policy-statement {{bgp.name}}-export term STATIC from protocol static
+set groups {{cfg_group}} policy-options policy-statement {{bgp.name}}-export term STATIC from route-filter 0.0.0.0/0 exact
+set groups {{cfg_group}} policy-options policy-statement {{bgp.name}}-export term STATIC then accept
+{%             endif %}
 {%         endfor %}
 {%     endfor %}
 {%     set vxlan_id = ri.get('vxlan_id', '') %}
-{%     if (vxlan_id != '') and (ri.get('routing_instance_type', '') == 'virtual-switch') %}
+{%     if (vxlan_id != '') and (ri.get('routing_instance_type', '') == 'virtual-switch') and (ri.get('is_master') != true) %}
 {%         for export_target in ri.get('export_targets', []) %}
 set groups {{cfg_group}} protocols evpn vni-options vni {{vxlan_id}} vrf-target {{export_target | rtfilter}}
 {%         endfor %}{# for export targets #}
 {%     endif %}{# if virtual-switch #}
-{%     if (ri.get('virtual_network_is_internal') == true) and ('vrf' in ri.get('routing_instance_type', '')) %}
-{%         set name = ri.get('description') %}
+{%     set master = ri.get('is_master', false) %}
+{%     if ((master != true) and (ri.get('virtual_network_is_internal') == true) and ('vrf' in ri.get('routing_instance_type', ''))) %}
+{%         set name = ri.get('description', '')[:127] %}
 {%         for intf in ri.get('routing_interfaces', []) %}
 {%             set irb_name = intf.get('name') %}
 set groups {{cfg_group}} routing-instances {{name}} protocols pim interface {{irb_name}} family inet
@@ -51,7 +56,7 @@ set groups {{cfg_group}} routing-instances {{name}} interface {{irb_name}}
 {% for ri in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) %}
 {%     set ns = namespace(name='') %}
 {%     if ri.get('description', '') %}
-{%         set ns.name = ri.get('description') %}
+{%         set ns.name = ri.get('description')[:127] %}
 {%     else %}
 {%         set ns.name = ri.get('name') %}
 {%     endif %}
@@ -65,10 +70,22 @@ set groups {{cfg_group}} routing-instances {{ns.name}} protocols pim interface a
 {%     endfor %}{# if pim #}
 {% endfor %}{# for device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('routing_instances', []) #}
 
+{# Add multicast router interface towards PNF device #}
+{% for ifd in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('physical_interfaces',[]) %}
+{%    for ifl in ifd.get('logical_interfaces',[]) %}
+{%        if ifl.get('comment','') == 'PNF-Service-Chaining' %}
+{%            for vlan in ifl.get('vlans',[]) %}
+set groups {{cfg_group}} protocols igmp-snooping vlan {{vlan.get('name')}} interface {{ifd.get('name')}}.{{ifl.get('unit')}} multicast-router-interface
+{%            endfor %}{# vlan in ifl.get('vlans',[]) #}
+{%        endif %}{# ifl.get('comment','') == 'PNF-Service-Chaining' #}
+{%    endfor %}{# for ifl in ifd.get('logical_interfaces',[]) #}
+{% endfor %}{# for ifd in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('physical_interfaces',[]) #}
+
 {# Config for vlans #}
 {%     for vlan in device_abstract_config.get('features', {}).get('pnf-service-chaining', {}).get('vlans', []) %}
 {%         set vlan_name = vlan.get('name') %}
 {%         set vni = vlan.get('vxlan_id', '') %}
+set groups {{cfg_group}} vlans {{vlan_name}} description "{{vlan.get('description')}}"
 {%         for irb_int in vlan.get('interfaces', []) %}
 {%             set int_name = irb_int.get('name') %}
 {%             if 'irb' in int_name %}
@@ -113,6 +130,9 @@ set groups {{cfg_group}} interfaces irb unit {{unit}} family {{family}} address 
 {%                 endfor %}
 set groups {{cfg_group}} interfaces irb unit {{unit}} proxy-macip-advertisement
 set groups {{cfg_group}} interfaces irb unit {{unit}} virtual-gateway-accept-data
+{%                 if li.is_virtual_router == True %}
+set groups {{cfg_group}} protocols router-advertisement interface irb.{{unit}} virtual-router-only
+{%                 endif %}
 {%             endfor %}
 {%         endif %}
 {% endfor%}
